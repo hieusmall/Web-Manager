@@ -14,14 +14,20 @@ if ( class_exists('webManagerLib', false) ) return;
 
 class webManagerLib {
     const ID = 'webManager';
-    const FORM_TABLE_NAME = 'web_manager_form';
-    const POPUP_TABLE_NAME = 'web_manager_popup';
+    const FORM_TABLE_NAME = 'wm_form';
+    const POPUP_TABLE_NAME = 'wm_popup';
+    const TICKET_TABLE_NAME = 'wm_ticket';
+
     const BACKEND_TEMPLATE = 'templates/backend/';
     const FRONTEND_TEMPLATE = 'templates/frontend/';
     const PLUGIN_PATH = WM_PLUGIN_PATH;
     const ASSET = 'assets/';
     const BACKEND_ASSET = self::ASSET . 'backend/';
     const FRONTEND_ASSET = self::ASSET . 'frontend/';
+
+    const ROUTES = [
+        'newTicket'
+    ];
 
     const VERSION = WM_VERSION;
 
@@ -38,7 +44,13 @@ class webManagerLib {
         add_shortcode('wmForm', array(__CLASS__, 'getWMFormShortCode'));
         // add stylesheets for the plugin's backend
         add_action('admin_enqueue_scripts', array( __CLASS__, 'load_admin_custom_be_styles' ));
-        add_action('wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_scripts' ));
+//        add_action('wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_scripts' ));
+        add_action('wp_footer', array(__CLASS__, 'enqueue_frontend_scripts'));
+
+        foreach (self::ROUTES as $route) {
+            add_action( 'wp_ajax_'.$route, array(__CLASS__, $route) );
+            add_action( 'wp_ajax_nopriv_'.$route, array(__CLASS__, $route) );
+        }
     }
 
     public static function load_admin_custom_be_styles() {
@@ -79,7 +91,15 @@ class webManagerLib {
     }
 
     public static function getWMFormShortCode($att, $content) {
-        $formHtml = file_get_contents(self::PLUGIN_PATH . self::FRONTEND_ASSET . 'form.html');
+        $form_id = isset($att['form_id']) && !is_null($att['form_id']) && (int)$att['form_id'] > 0 ? $att['form_id'] : false;
+        if (!$form_id) {
+            $formHtml = "Oops";
+        } else {
+            $formStr = htmlspecialchars(file_get_contents(self::PLUGIN_PATH . self::FRONTEND_ASSET . 'form.html'));
+            $formStr = str_replace("{form_id}", $form_id,$formStr);
+
+            $formHtml = htmlspecialchars_decode($formStr);
+        }
         return $formHtml;
     }
 
@@ -111,6 +131,50 @@ class webManagerLib {
 
     public static function wmNewForm() {
 
+    }
+
+    public static function newTicket() {
+        //do bên js để dạng json nên giá trị trả về dùng phải encode
+        $ticket = isset($_REQUEST['ticket']) && gettype($_REQUEST['ticket']) == 'array' && count($_REQUEST['ticket']) > 0 ? $_REQUEST['ticket'] : false;
+        if (!$ticket) {
+            wp_send_json_error('Unknowwn', 401);
+        } else {
+            $name = isset($ticket['name']) && gettype($ticket['name']) == "string" && strlen(trim($ticket['name'])) > 0 ? trim($ticket['name']) : false;
+            $email = isset($ticket['email']) && gettype($ticket['email']) == "string" && strlen(trim($ticket['email'])) ? $ticket['email'] : false;
+            $phone = isset($ticket['phone']) && gettype($ticket['phone']) == "string" && strlen(trim($ticket['phone'])) > 9 && strlen(trim($ticket['phone'])) < 15 ? $ticket['phone'] : false;
+            $note = isset($ticket['note']) && gettype($ticket['note']) == "string" && strlen(trim($ticket['note'])) > 0 ? $ticket['note'] : false ;
+            $detail = isset($ticket['detail']) && gettype($ticket['detail']) == 'array' && count($ticket['detail']) > 0 ? $ticket['detail'] : false;
+            $time =  date('Y-m-d H:i:s');
+
+            if ($name && $phone) {
+                $newTicket = array(
+                    'name' => $name,
+                    'phone' => $phone,
+                    'created_at' => $time,
+                    'updated_at' => $time,
+                );
+                if ($email) $newTicket['email'] = $email;
+                if ($note) $newTicket['note'] = $note;
+                if ($detail) $newTicket['detail'] = json_encode($detail);
+
+                global $wpdb;
+                $ticketTable = $wpdb->prefix . self::TICKET_TABLE_NAME;
+                $result =  $wpdb->insert( $ticketTable, $newTicket);
+                if ($result) {
+                    wp_send_json_success("Done");
+                } else {
+                    wp_send_json_error("Cannot create new ticket",405);
+                }
+            } else {
+                wp_send_json_error('Unknowwn', 402);
+            }
+        }
+        die();
+    }
+
+
+    public static function dateTimeNow() {
+        return date('Y-m-d H:i:s');
     }
 
     /*public static function checkTheStorage() {

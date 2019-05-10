@@ -6,34 +6,34 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
-
-    <script src="js/jquery.min.js"></script>
-    <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
-
-
-    <link rel="stylesheet" href="css/wm_style.css"/>
-    <script type="text/javascript" src="js/wm_app.js"></script>
+    <!--<script src="js/jquery.min.js"></script>-->
+    <!--<script src="../vendor/bootstrap/popper.min.js"></script>-->
+    <!--<script src="../vendor/bootstrap/js/bootstrap.min.js"></script>-->
+    <!---->
+    <!--<link rel="stylesheet" href="css/wm_style.css"/>-->
+    <!--<script type="text/javascript" src="js/wm_app.js"></script>-->
 </head>
 <body>
+
     <div class="form">
-        <form class="wm-campaign-form wm-form">
+        <form class="wm-campaign-form wm-form" data-form-id="{form_id}">
             <div class="form-group">
                 <label for="wmFieldName">Họ tên</label>
-                <input type="text" class="form-control" name="name" id="wmFieldName" placeholder="Điền tên">
+                <input type="text" class="form-control" name="name" id="wmFieldName" placeholder="Họ tên">
             </div>
             <div class="form-group">
                 <label for="wmFieldEmail">Email</label>
-                <input type="email" class="form-control" name="email" id="wmFieldEmail" placeholder="Điền Email">
+                <input type="email" class="form-control" name="email" id="wmFieldEmail" placeholder="Email">
             </div>
             <div class="form-group">
                 <label for="wmFieldPhone">Số điện thoại</label>
-                <input type="text" class="form-control" name="phone" id="wmFieldPhone" placeholder="Điền tên">
+                <input type="text" class="form-control" name="phone" id="wmFieldPhone" placeholder="Số điện thoại">
             </div>
             <div class="form-group">
-                <label for="wmFieldNote">Bạn cần hỗ trợ về dịch vụ gì</label>
+                <label for="wmFieldNote">Dịch vụ bạn quan tâm</label>
                 <textarea class="form-control" name="note" id="wmFieldNote" cols="30" rows="5"></textarea>
             </div>
-            <button type="submit" class="btnSubmit btn btn-primary">Gọi Tôi</button>
+            <button type="submit" class="btnSubmit text-capitalize btn btn-primary">Gọi Tôi Ngay</button>
         </form>
     </div>
 

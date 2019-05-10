@@ -29,8 +29,3 @@
         </table>
     </form>
 </div>
-
-
-<script type="text/javascript">
-    alert(123)
-</script>
