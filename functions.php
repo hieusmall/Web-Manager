@@ -13,11 +13,16 @@ add_action('init', array( 'webManagerLib', 'init' )); // Main Hook
 if ( class_exists('webManagerLib', false) ) return;
 
 class webManagerLib {
+    const ID = 'webManager';
     const FORM_TABLE_NAME = 'web_manager_form';
     const POPUP_TABLE_NAME = 'web_manager_popup';
     const BACKEND_TEMPLATE = 'templates/backend/';
     const FRONTEND_TEMPLATE = 'templates/frontend/';
     const PLUGIN_PATH = WM_PLUGIN_PATH;
+    const ASSET = 'assets/';
+    const BACKEND_ASSET = self::ASSET . 'backend/';
+    const FRONTEND_ASSET = self::ASSET . 'frontend/';
+
     const VERSION = WM_VERSION;
 
     public static function init() {
@@ -31,23 +36,23 @@ class webManagerLib {
 
         // Add shortcode
         add_shortcode('wmForm', array(__CLASS__, 'getWMFormShortCode'));
-        if (!is_admin()) {
-            // add stylesheets for the plugin's backend
-//            add_action('admin_enqueue_scripts', array( __CLASS__, 'load_custom_be_styles' ));
-            add_action('wp_enqueue_scripts', array( __CLASS__, 'enqueue_scripts' ));
-        } else {
-
-        }
+        // add stylesheets for the plugin's backend
+        add_action('admin_enqueue_scripts', array( __CLASS__, 'load_admin_custom_be_styles' ));
+        add_action('wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_scripts' ));
     }
 
-    public static function load_custom_be_styles() {
-        wp_register_style('webManageBEStyles', plugin_dir_url( __FILE__ ) . 'css/backend.css', false, '0.0.1' );
+    public static function load_admin_custom_be_styles() {
+        wp_register_style('webManageBEStyles', plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'css/wm_backend.css', false, '0.0.1' );
         wp_enqueue_style( 'webManageBEStyles' );
+        wp_enqueue_script('jquery');
+        wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/wm_backend.js', array('jquery'), self::VERSION, true);
     }
 
-    public static function enqueue_scripts() {
-        wp_enqueue_script('jquery');
-        wp_enqueue_script(self::ID, self::PLUGIN_PATH . 'js/q2w3-fixed-widget.min.js', array('jquery'), self::VERSION, true);
+    public static function enqueue_frontend_scripts() {
+        wp_register_style('webManageFEStyles', plugin_dir_url(__FILE__) . self::FRONTEND_ASSET . 'css/wm_style.css', true, '0.0.1' );
+        wp_enqueue_style( 'webManageFEStyles' );
+        wp_enqueue_script('webManageFEScript');
+        wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::FRONTEND_ASSET . 'js/wm_app.js', array('jquery'), self::VERSION, true);
     }
 
     public static function admin_menu() {
@@ -74,26 +79,8 @@ class webManagerLib {
     }
 
     public static function getWMFormShortCode($att, $content) {
-        $html = '<form class="wm-form">
-                    <div class="form-group">
-                        <label for="wmFieldName">Họ tên</label>
-                        <input type="text" class="form-control" name="name" id="wmFieldName" placeholder="Điền tên">
-                    </div>
-                    <div class="form-group">
-                        <label for="wmFieldEmail">Email</label>
-                        <input type="email" class="form-control" name="email" id="wmFieldEmail" placeholder="Điền Email">
-                    </div>
-                    <div class="form-group">
-                        <label for="wmFieldPhone">Số điện thoại</label>
-                        <input type="text" class="form-control" name="phone" id="wmFieldPhone" placeholder="Điền tên">
-                    </div>
-                    <div class="form-group">
-                        <label for="wmFieldNote">Bạn cần hỗ trợ về dịch vụ gì</label>
-                        <textarea name="note" id="wmFieldNote" cols="30" rows="5"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Submit</button>
-                </form>';
-        return $html;
+        $formHtml = file_get_contents(self::PLUGIN_PATH . self::FRONTEND_ASSET . 'form.html');
+        return $formHtml;
     }
 
     public static function webManagerPopup() {

@@ -3,7 +3,7 @@
     <a href="#" class="page-title-action">Thêm Form mới</a>
     <hr class="wp-header-end">
     <form id="form-filter" method="get" action="">
-        <table class="wp-list-table widefat fixed striped posts">
+        <table class="wmListFormTable wp-list-table widefat fixed striped posts">
             <thead>
                 <tr>
                     <td id="cb" class="manage-colunm column-cb check-column">
@@ -29,3 +29,8 @@
         </table>
     </form>
 </div>
+
+
+<script type="text/javascript">
+    alert(123)
+</script>
