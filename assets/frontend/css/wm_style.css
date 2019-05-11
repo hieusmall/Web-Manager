@@ -1,13 +1,28 @@
 /*@import 'animate.css';*/
 /*@import "hamburgers.css";*/
-@import "../../vendor/bootstrap/css/bootstrap.min.css";
+/*@import "../../vendor/bootstrap/css/bootstrap.min.css";*/
+@import "lib.css";
 
-
+/**
+ * WM_FORM
+ */
 .wm-form {
     max-width: 500px;
-    margin: auto;
+    margin: 20px auto;
     padding: 10px;
     background: transparent;
+}
+
+.wm-form.no-background {
+    background: transparent;
+}
+
+.wm-form.bg-white {
+    background: white;
+}
+
+.wm-form .form-group {
+    margin-bottom: 1em;
 }
 
 .wm-form input ,.wm-form input[type="text"],.wm-form input[type="tel"] {
@@ -19,6 +34,7 @@
 .wm-form .form-control,
 .wm-form input[type="text"].form-control,
 .wm-form input[type="tel"].form-control {
+    margin-bottom: 0;
     display: block !important;
     width: 100% !important;
     height: calc(1.5em + .75rem + 2px);
@@ -32,4 +48,78 @@
     border: 1px solid #ced4da !important;
     border-radius: .25rem;
     transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}
+
+.wm-form .form-control:hover,
+.wm-form .form-control:focus,
+.wm-form input[type="text"].form-control:hover,
+.wm-form input[type="text"].form-control:focus,
+.wm-form input[type="tel"].form-control:hover,
+.wm-form input[type="tel"].form-control:focus {
+    border-color: #003866 !important;
+}
+
+
+/**
+ * WM_POPUP
+ */
+.wm-popup .close-popup {
+    position: absolute;
+    top: -2%;
+    right: -2%;
+    font-size: 30px;
+    overflow: hidden;
+    z-index: 2;
+    padding: 5px 10px;
+    text-align: center;
+    background-color: darkgoldenrod;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.wm-popup.show {
+    z-index: 999999;
+}
+
+.wm-popup .close-popup .close {
+    display: block;
+    width: 100%;
+    position: relative;
+    height: 100%;
+    font-size: 30px;
+    cursor: pointer;
+    z-index: 3;
+}
+
+.wm-popup .wm-popup-body .wm-col-right,
+.wm-popup .wm-popup-body .wm-col-left {
+    float: left;
+}
+
+@media (min-width: 768px) {
+    .wm-popup .wm-popup-body .wm-col-right,
+    .wm-popup .wm-popup-body .wm-col-left {
+        width: 49%;
+    }
+
+    .wm-popup .wm-popup-body .wm-col-left {
+        margin-right: 2%;
+    }
+}
+
+@media (min-width: 576px) {
+    .wm-campaign-popup .modal-dialog {
+        max-width: 800px;
+    }
+}
+
+
+.wm-popup .wm-popup-body {
+    overflow: hidden;
+}
+
+.wm-popup-content {
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
 }

@@ -24,12 +24,20 @@ class webManagerLib {
     const ASSET = 'assets/';
     const BACKEND_ASSET = self::ASSET . 'backend/';
     const FRONTEND_ASSET = self::ASSET . 'frontend/';
+    const VERSION = WM_VERSION;
 
     const ROUTES = [
-        'newTicket'
+        'newTicket', 'readForm'
     ];
 
-    const VERSION = WM_VERSION;
+
+    const TO_CARESOFT_NOW_ON = 'on';
+    const TO_CARESOFT_NOW_OFF = 'off';
+    const FORM_TO_CARESOFT_CHOICE = array(
+        self::TO_CARESOFT_NOW_ON => 'on',
+        self::TO_CARESOFT_NOW_OFF => 'off'
+    );
+
 
     public static function init() {
         // Check login
@@ -37,19 +45,21 @@ class webManagerLib {
             return "Bạn cần phải đăng nhập";
         }
 
-        // else
+        // If login
         add_action('admin_menu', array( __CLASS__, 'admin_menu' ), 5);
-
-        // Add shortcode
-        add_shortcode('wmForm', array(__CLASS__, 'getWMFormShortCode'));
         // add stylesheets for the plugin's backend
         add_action('admin_enqueue_scripts', array( __CLASS__, 'load_admin_custom_be_styles' ));
 //        add_action('wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_scripts' ));
         add_action('wp_footer', array(__CLASS__, 'enqueue_frontend_scripts'));
 
-        foreach (self::ROUTES as $route) {
-            add_action( 'wp_ajax_'.$route, array(__CLASS__, $route) );
-            add_action( 'wp_ajax_nopriv_'.$route, array(__CLASS__, $route) );
+        // Add shortcode
+        add_shortcode('wmForm', array(__CLASS__, 'getWMFormShortCode'));
+        add_shortcode('wmPopup', array(__CLASS__, 'getWMPopupShortCode'));
+
+        foreach (self::ROUTES as $action) {
+            $fn =  $action . 'API';
+            add_action( 'wp_ajax_'.$action, array(__CLASS__, $fn) );
+            add_action( 'wp_ajax_nopriv_'.$action, array(__CLASS__, $fn) );
         }
     }
 
@@ -95,12 +105,46 @@ class webManagerLib {
         if (!$form_id) {
             $formHtml = "Oops";
         } else {
-            $formStr = htmlspecialchars(file_get_contents(self::PLUGIN_PATH . self::FRONTEND_ASSET . 'form.html'));
-            $formStr = str_replace("{form_id}", $form_id,$formStr);
-
-            $formHtml = htmlspecialchars_decode($formStr);
+            $formStr = '';
+            // Get this form
+            self::wmReadForm($form_id, function ($err, $form) use (&$formStr, &$formHtml) {
+                if (!$err && $form) {
+                    $formStr = self::getFETemplate((array)$form, 'form');
+                }
+                $formHtml = htmlspecialchars_decode($formStr);
+            });
         }
         return $formHtml;
+    }
+
+    public static function getWMPopupShortCode($att, $content) {
+        $popup_id = isset($att['popup_id']) && !is_null($att['popup_id']) && (int)$att['popup_id'] > 0 ? $att['popup_id'] : false;
+        if (!$popup_id) {
+            $popupHtml = "Pop Oops";
+        } else {
+            $popupStr = htmlspecialchars(file_get_contents(self::PLUGIN_PATH . self::FRONTEND_ASSET . 'popup.html'));
+            $popupHtml = htmlspecialchars_decode($popupStr);
+        }
+
+        return $popupHtml;
+    }
+
+    public static function getFETemplate($arr,$template) {
+        $hardStr = htmlspecialchars(file_get_contents(self::PLUGIN_PATH . self::FRONTEND_ASSET  . $template . '.html'));
+        $str = self::interpolate($hardStr, $arr);
+        return $str;
+    }
+
+    public static function interpolate($str, $data) {
+        $str = gettype($str) == 'string' && strlen($str) > 0 ? $str : '';
+        $data = gettype($data) == 'array' && !is_null($data) ? $data : array();
+
+        // For each key in the data object, insert its value into the string at the corresponding placeholder
+        foreach($data as $key => $replace){
+            $find = '{'.$key.'}';
+            $str = str_replace($find,$replace, $str);
+        }
+        return $str;
     }
 
     public static function webManagerPopup() {
@@ -133,7 +177,42 @@ class webManagerLib {
 
     }
 
-    public static function newTicket() {
+
+    public static function wmReadForm($form_id, $callback) {
+        $form_id = isset($form_id) && !is_null($form_id) && (int)$form_id > 0 ? $form_id : false;
+        if (!$form_id) {
+            $callback("Mising some required field");
+        } else {
+            global $wpdb;
+            $tableName =  $wpdb->prefix . self::FORM_TABLE_NAME;
+            $result = $wpdb->get_results( "SELECT * FROM {$tableName} WHERE form_id = {$form_id} LIMIT 1", OBJECT );
+            $form = null;
+            if ($result) $form = $result[0];
+            if (!$form) {
+                $callback("Cannot get this form", null);
+            } else {
+                $callback(false, $form);
+            }
+        }
+    }
+
+    public static function readFormAPI() {
+        $form_id = isset($_REQUEST['ticket']) && in_array(gettype($_REQUEST['form_id']), ["string", "number"]) && (int)$_REQUEST['form_id'] > 0 ? (int)$_REQUEST['form_id'] : false;
+        if (!$form_id) {
+            wp_send_json_error('Mising some required field', 401);
+        } else {
+            self::wmReadForm($form_id, function ($err, $form) {
+                if (!$err && $form) {
+                    wp_send_json_success($form);
+                } else {
+                    wp_send_json_error('Cannot find this form', 405);
+                }
+            });
+        }
+        die();
+    }
+
+    public static function newTicketAPI() {
         //do bên js để dạng json nên giá trị trả về dùng phải encode
         $ticket = isset($_REQUEST['ticket']) && gettype($_REQUEST['ticket']) == 'array' && count($_REQUEST['ticket']) > 0 ? $_REQUEST['ticket'] : false;
         if (!$ticket) {
@@ -144,34 +223,168 @@ class webManagerLib {
             $phone = isset($ticket['phone']) && gettype($ticket['phone']) == "string" && strlen(trim($ticket['phone'])) > 9 && strlen(trim($ticket['phone'])) < 15 ? $ticket['phone'] : false;
             $note = isset($ticket['note']) && gettype($ticket['note']) == "string" && strlen(trim($ticket['note'])) > 0 ? $ticket['note'] : false ;
             $detail = isset($ticket['detail']) && gettype($ticket['detail']) == 'array' && count($ticket['detail']) > 0 ? $ticket['detail'] : false;
+            $form_id = isset($ticket['form_id']) && !is_null($ticket['form_id']) && (int)$ticket['form_id'] > 0 ? (int)$ticket['form_id'] : false;
             $time =  date('Y-m-d H:i:s');
 
-            if ($name && $phone) {
+            if ($form_id && $name && $phone) {
+                // Check this form and send to caresoft
                 $newTicket = array(
                     'name' => $name,
                     'phone' => $phone,
                     'created_at' => $time,
                     'updated_at' => $time,
+                    'form_id' => $form_id
                 );
                 if ($email) $newTicket['email'] = $email;
                 if ($note) $newTicket['note'] = $note;
                 if ($detail) $newTicket['detail'] = json_encode($detail);
 
-                global $wpdb;
-                $ticketTable = $wpdb->prefix . self::TICKET_TABLE_NAME;
-                $result =  $wpdb->insert( $ticketTable, $newTicket);
-                if ($result) {
-                    wp_send_json_success("Done");
-                } else {
-                    wp_send_json_error("Cannot create new ticket",405);
-                }
+                self::wmReadForm($form_id, function ($err, $formData) use (&$newTicket) {
+                    if (!$err && $formData) {
+                        // Insert new ticket to database
+                        global $wpdb;
+                        $ticketTable = $wpdb->prefix . self::TICKET_TABLE_NAME;
+
+                        // Check and Send data to CareSoft
+                        $checkToCareSoftNow = $formData->to_caresoft_now == self::TO_CARESOFT_NOW_ON;
+                        if ($checkToCareSoftNow) {
+                            $title = $formData->title;
+                            $ticketComment = $newTicket['note'] ? $newTicket['note'] : "";
+                            $email = $newTicket['email'] ? $newTicket['email'] : null;
+                            $name = $newTicket['name'];
+                            $phone = $newTicket['phone'];
+                            $caresoft_id = isset($formData->caresoft_id) ? $formData->caresoft_id : null;
+                            $options = array($title, $ticketComment, $email, $phone, $name, $caresoft_id);
+                            $sendTicket = self::sendTicketToCareSoft($options);
+
+                            // If can't send to caresoft
+//                            if (!$sendTicket) {
+//                                print_r()
+////                                wp_send_json_error("Cannot send , some wrong" , 404);
+//                            } else {
+//                                print_r()
+//                            }
+                        }
+
+//                        $result =  $wpdb->insert( $ticketTable, $newTicket);
+//                        if ($result) {
+//                            wp_send_json_success("Done");
+//                        } else {
+//                            wp_send_json_error("Cannot create new ticket",405);
+//                        }
+                    } else {
+                        wp_send_json_error("Cannot find this form" , 403);
+                    }
+                });
             } else {
-                wp_send_json_error('Unknowwn', 402);
+                wp_send_json_error('Missing require field', 402);
             }
         }
         die();
     }
 
+
+    public function sendTicketToCareSoft($options) {
+        $options = isset($options) && !is_null($options) && gettype($options) == 'array' ? $options : false;
+        if (!$options)
+            return false;
+
+        list($title , $ticket_comment, $email, $phone, $username, $caresoft_id) = $options;
+
+        $caresoft_id = isset($caresoft_id) && !is_null($caresoft_id) && (int)$caresoft_id > 0 ? $caresoft_id : 24606;
+        $title = isset($title) && gettype($title) == "string" && strlen($title) > 0 ? $title : false;
+        $ticket_comment = isset($ticket_comment) && gettype($ticket_comment) == "string" && strlen($ticket_comment) > 0 ? $ticket_comment : false;
+        $email = isset($email) && !is_null($email) && strlen($email) > 0 ? $email : "";
+        $phone = isset($phone) && !is_null($phone) && strlen($phone) > 9 && strlen($phone) < 15 ? $phone : false;
+        $email = isset($email) && !is_null($email) && strlen($email) > 0 ? $email : false;
+        $username = isset($username) && !is_null($username) && strlen($username) > 0 ? $username : false;
+
+        if ($title && $username && $phone) {
+            $urlSend = "https://api.caresoft.vn/tmvngocdung/api/v1/tickets";
+            $urlGet = "https://api.caresoft.vn/tmvngocdung/api/v1/agents";
+            $resultGet = self::getPostData($urlGet);
+            $argsGet = json_decode($resultGet,true);
+            $agents = $argsGet["agents"];
+            $ids = array();
+            $ex = array(15413222, 16185696,16595190,15594858,16650858,19196733,19831065,19833102,19833687,19834329,19834410,22480929,23943516,24881607,24882753,24883884);
+            foreach ($agents as $val) {
+                if (!in_array((int)$val['id'], $ex)) {
+                    array_push($ids,(int)$val['id']);
+                }
+            }
+            $rand_keys = array_rand($ids);
+            $id = $ids[$rand_keys];
+            $custom_field = '"id": "1336", "value": "20728"},{"id": "1332", "value": "20732"},{"id": "1418", "value": "'.$caresoft_id.'"}';
+            $postStr = '{"ticket": {"ticket_subject": "'.$title.'","ticket_comment":  "'.$ticket_comment.'","email": "'.$email.'","phone": "'.$phone.'","username": "'.$username.'","ticket_priority": "Normal", "service_id" : "950022","assignee_id": "'.$id.'","custom_fields": ['.$custom_field.']}}';
+            $sendResult = self::sendPostData($urlSend, $postStr);
+            return $sendResult;
+        } else {
+            return false;
+        }
+    }
+
+
+    public static function getPostData($url) {
+        $ch = curl_init($url);
+//        curl_setopt($ch, CURLOPT_CAINFO, '/etc/ssl/cacert.pem');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            "Content-Type: application/json",
+            "Authorization: Bearer 8IQwZ6_shBeMuh0"));
+        $result = curl_exec($ch);
+        curl_close($ch);
+        return $result;
+    }
+
+    public static function sendPostData($url, $post){
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            "Content-Type: application/json",
+            "Authorization: Bearer 8IQwZ6_shBeMuh0"));
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS,$post);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        $result = curl_exec($ch);
+        curl_close($ch);
+        return $result;
+    }
+
+    public static function postContact($apikey, $campaignid, $fullname, $email, $addcontacturl){
+        $data = array (
+            'name' => $fullname,
+            'email' => $email,
+            'campaign' => array('campaignId'=>$campaignid),
+            'ipAddress'=>  $_SERVER['REMOTE_ADDR'],
+        );
+        $data_string = json_encode($data);
+        $ch = curl_init($addcontacturl);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                'Content-Type: application/json',
+                'X-Auth-Token: api-key '.$apikey,
+            )
+        );
+
+        $result = curl_exec($ch); // Print this If you want to verfify
+        $state_result = json_decode($result);
+    }
+
+    public static function getContact($apikey, $email, $getcontacturl){
+        $chmmn = curl_init($getcontacturl );
+        curl_setopt($chmmn, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($chmmn, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($chmmn, CURLOPT_HTTPHEADER, array(
+                'Content-Type: application/json',
+                'X-Auth-Token: api-key '.$apikey,
+            )
+        );
+        $resultmn = curl_exec($chmmn);
+        $resultmn = json_decode($resultmn);
+        return $resultmn;
+    }
 
     public static function dateTimeNow() {
         return date('Y-m-d H:i:s');
