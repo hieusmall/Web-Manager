@@ -1,9 +1,40 @@
 (function ($) {
     var wmBags = {};
 
-    wmBags.acceptPage = ['formList','popupList'];
+    wmBags.pluginPageUrl = $("#pluginPageUrl").data("pluginPageUrl");
 
-    wmBags.getPageActive = () => {
+    wmBags.acceptPage = ['formList', 'formNew', 'formUpdate', 'formDelete','popupList'];
+
+    wmBags.getPageActive = (page) => {
+        var $allPageWraps = $(document).find('.wmAdminWrap');
+        var active = false;
+        page = typeof page == "string" ? page : false;
+        if (page) {
+            $allPageWraps.each(function (i, wrap) {
+                var $wrap = $(wrap);
+                var pageCheck = $wrap.data('pageActive');
+                if (page != pageCheck) {
+                    $wrap.removeClass('wmActive');
+                } else {
+                    $wrap.addClass('wmActive');
+                }
+            });
+            return page;
+        }
+
+        /*$allPageWraps.each(function (i, wrap) {
+            var done = i == $allPageWraps.length - 1;
+            var $wrap = $(wrap);
+            var acceptPage = wmBags.acceptPage;
+            var pageActive = $wrap.data('pageActive');
+            if ($wrap.hasClass('wmActive')) {
+                $wrap.show();
+                active = typeof pageActive == "string" && acceptPage.includes(pageActive) ? pageActive : false;
+            } else {
+                $wrap.hide();
+            }
+        });
+        return active;*/
         var $adminWrap = $(document).find('.wmAdminWrap');
         if ($adminWrap) {
             var acceptPage = wmBags.acceptPage;
@@ -49,13 +80,13 @@
             }
         });
 
-
         function makeDataToTable(forms) {
             $tbody.html("");
+            var pluginPageUrl = wmBags.pluginPageUrl;
             forms.forEach(function (formData) {
                 var {form_id, title, directional, to_caresoft_now, created_at, caresoft_id} = formData;
                 var shortcode = `[wpForm form_id="${form_id}"]`;
-                var tr = `<tr>
+                var tr = `<tr class="trformItem" data-form_id="${form_id}">
                                 <th scope="row" class="check-column">			
                                 <label class="screen-reader-text" for="cb-select-${form_id}">Chọn ${title}</label>
                                     <input id="cb-select-${form_id}" type="checkbox" name="forms[]" value="${form_id}">
@@ -65,7 +96,15 @@
                                     </div>
                                 </th>
                                 <td>
-                                    <strong><a class="row-title" href="#" aria-label="${title}">${title}</a></strong>
+                                    <strong><a id="detailFormByTitleBtn" class="row-title" href="#" aria-label="${title}">${title}</a></strong>
+                                    <div class="row-actions">
+                                        <span class="edit">
+                                            <a class="updateFormItem" href="#" aria-label="Sửa “${title}”">Chỉnh sửa</a> | 
+                                        </span>
+                                        <span class="trash">
+                                            <a class="deleteFormItem" href="#" class="submitdelete" aria-label="Bỏ “${title}” vào thùng rác">Xóa</a> | 
+                                        </span>
+                                    </div>
                                 </td>
                                 <td>${to_caresoft_now.toUpperCase()}</td>
                                 <td>${directional ? directional : "Không"}</td>
@@ -74,6 +113,86 @@
                             </tr>`;
                 $tbody.append(tr);
             });
+
+            var $trs = $tbody.find('tr.trformItem');
+            $trs.off('click');
+            $trs.on('click', function (e) {
+                var target = e.target;
+                var $target = $(target);
+                var $tr = $(target).closest('tr');
+                var form_id = $tr.data('form_id');
+
+                if ($target.hasClass('updateFormItem')) {
+                    window.location = `${pluginPageUrl}&currentPage=formUpdate&form_id=${form_id}` ;
+                }
+            })
+        }
+
+        // Add event new form
+        /*$('#newFormBtn').off('click');
+        $('#newFormBtn').on('click', function (e) {
+            e.preventDefault(e);
+            wmBags.getViewHtml('formNew');
+        });*/
+    }
+
+    wmBags.formNewPage = () => {
+        // Listen form submit
+        var $form = $("#formNewItem");
+        $form.on('submit', function (e) {
+            e.preventDefault(e);
+            var formData = {};
+            var $inputs = $form.find(':input');
+            $inputs.each(function (i, field) {
+                var $field = $(field);
+                var {name, type, disabled, value} = field;
+                if (['submit', 'button'].includes(type)) return;
+                if (name) {
+                    formData[name] = $field.val();
+                }
+            });
+
+            var a = Object.keys(formData).length > 0 ? true : false;
+            if (a) {
+                var options = {
+                    type: 'post',
+                    data: {
+                        action: 'newForm',
+                        form : formData
+                    }
+                }
+                wmBags.jsonTransPortData(options, function (err, res) {
+                    if (!err && res) {
+                        var pluginPageUrl = $("#pluginPageUrl").data("pluginPageUrl");
+                        window.location = `${pluginPageUrl}&currentPage=formList`;
+                    } else {
+                        alert("Không thể tạo form này");
+                        return false
+                    }
+                });
+            } else {
+                alert("Rỗng");
+            }
+        })
+
+        // Back to List Form
+        /*var $backToListFormBtn = $('#backToListFormBtn');
+        $backToListFormBtn.on('click', function (e) {
+            e.preventDefault(e);
+            wmBags.getViewHtml('formList');
+        });*/
+    };
+
+    wmBags.formUpdatePage = () => {
+
+    }
+
+    wmBags.getViewHtml = (view) => {
+        var b = wmBags.getPageActive(view);
+        if (b) {
+            wmBags.loadDataOnPage();
+        } else {
+            alert("Không tìm thấy page này đâu !");
         }
     }
 
@@ -81,9 +200,9 @@
         var search = typeof window.location.search == "string" && window.location.search.trim().length > 0 ? window.location.search : false;
         if (!search) return false;
         var query = wmBags.queryStringToObj(search);
-        if (!query.hasOwnProperty('page') && query.page != 'webManagerForm')
-            return false;
-        return true;
+        if (query.hasOwnProperty('page') && query.page == 'webManagerForm')
+            return true;
+        return false;
     }
 
     wmBags.init = () => {

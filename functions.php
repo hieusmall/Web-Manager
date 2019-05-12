@@ -27,7 +27,7 @@ class webManagerLib {
     const VERSION = WM_VERSION;
 
     const ROUTES = [
-        'newTicket', 'listForm' ,'readForm'
+        'newTicket', 'listForm' , 'newForm','readForm'
     ];
 
 
@@ -174,7 +174,16 @@ class webManagerLib {
         return empty($result) ? false : $result;
     }
 
-    public static function wmNewForm() {
+    public static function wmNewForm($formArr, $callback) {
+        global $wpdb;
+        $formTable = $wpdb->prefix . self::FORM_TABLE_NAME;
+        $result =  $wpdb->insert( $formTable, $formArr);
+
+        if ($result) {
+            $callback(false);
+        } else {
+            $callback("Cannot create new Form");
+        }
 
     }
 
@@ -194,6 +203,10 @@ class webManagerLib {
                 $callback(false, $form);
             }
         }
+    }
+
+    public static function wmUpdateForm($form_id, $callback) {
+
     }
 
 
@@ -225,6 +238,62 @@ class webManagerLib {
         }
         die();
     }
+
+    public static function newFormAPI() {
+        $form = isset($_REQUEST['form']) && is_array($_REQUEST['form']) && count($_REQUEST['form']) > 0 ? $_REQUEST['form'] : [] ;
+        if (!$form) {
+            wp_send_json_error('Missing required field', 401);
+        } else {
+            $title = isset($form['title']) && is_string($form['title']) && strlen($form['title']) > 0 ? $form['title'] : false;
+
+            $directional = isset($form['directional']) && is_string($form['directional']) ? $form['directional'] : null;
+            $to_caresoft_now = isset($form['to_caresoft_now']) && in_array($form['to_caresoft_now'], ['on','off']) ? $form['to_caresoft_now'] : 'off' ;
+            $caresoft_id = isset($form['caresoft_id']) && in_array(gettype($form['caresoft_id']), ['number', 'string']) ? $form['caresoft_id'] : null;
+
+            if (!$title) {
+                wp_send_json_error('Missing required field', 402);
+            } else {
+                $newForm = array(
+                    'title' => $title,
+                    'directional' => $directional,
+                    'to_caresoft_now' => $to_caresoft_now,
+                    'caresoft_id' => $caresoft_id
+                );
+
+                self::wmNewForm($newForm, function ($err) {
+                    if (!$err) {
+                        wp_send_json_success(true);
+                    } else {
+                        wp_send_json_error('Cannot create new form', 405);
+                    }
+                });
+            }
+        }
+        die();
+    }
+
+    public static function updateFormAPI() {
+        $form_id = isset($_REQUEST['form_id']) && in_array(gettype($_REQUEST['form_id']), ["string", "number"]) && (int)$_REQUEST['form_id'] > 0 ? (int)$_REQUEST['form_id'] : false;
+        if (!$form_id) {
+            wp_send_json_error('Mising some required field', 401);
+        } else {
+            self::wmReadForm($form_id, function ($err, $formData) use (&$form_id) {
+                if (!$err && $formData) {
+                    self::wmUpdateForm($form_id, function ($err) {
+                        if (!$err) {
+                            wp_send_json_success(true);
+                        } else {
+                            wp_send_json_error('Cannot update this form', 405);
+                        }
+                    });
+                } else {
+                    wp_send_json_error('Cannot find this form', 402);
+                }
+            });
+        }
+        die();
+    }
+
 
     public static function newTicketAPI() {
         //do bên js để dạng json nên giá trị trả về dùng phải encode
