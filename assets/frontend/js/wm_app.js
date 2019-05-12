@@ -1,14 +1,14 @@
 (function($){
-    // Import some script
-    // import "./modal.js";
-
+    // Define the client;
     var client = {};
-    
+
+
     client.lead = false;
 
+    /**
+     * @function listenPopupHandler
+     */
     client.listenPopupHandler = () => {
-
-
         var $showPopupBtns = $('.wmCampaignShowPopup');
         $showPopupBtns.on('click', function (e) {
             var button = this;
@@ -24,6 +24,9 @@
         });
     }
 
+    /**
+     * @function listenFormSubmit
+     */
     client.listenFormSubmit = () => {
         var $forms = $('.wm-campaign-form');
         $forms.on('submit', function (e) {
@@ -38,7 +41,6 @@
                 var loopDone = i == $fields.length - 1;
                 if (loopDone) {
                     transPortTicket(ticket);
-                    return false;
                 }
                 var $field = $(field);
                 var {type, disabled, required, value, name, id} = field;
@@ -61,7 +63,7 @@
                 });
             }
 
-            function transPortTicket(ticket) {
+            function transPortTicket(ticket, callback) {
                 // add some optional data
                 var { href, origin, pathname, search } = window.location;
                 var detail = {
@@ -80,18 +82,29 @@
                     }
                 };
 
-                client.jsonTransPortData(options, function (err, res) {
-                    if (!err && res) {
-                        alert("Đăng kí thành công");
-                        // reduceThisForm();
-                    } else {
-                        alert("Đăng kí thất bại rùi");
+                client.jsonTransPortData(options, function (err, data) {
+                    if (!err && data) {
+                        var donePage = ticket.directional;
+                        if (donePage) {
+                            window.location = donePage;
+                        } else {
+                            alert("Đăng kí thành công");
+                        }
+
+                        reduceThisForm();
                     }
+                    return false;
                 });
             }
         })
     }
 
+    /**
+     * @function jsonTransPortData
+     * @param type
+     * @param data
+     * @param callback
+     */
     client.jsonTransPortData = ({type, data}, callback) => {
         var { origin, pathname } = window.location;
         var url = `${origin + pathname}wp-admin/admin-ajax.php`;
@@ -111,11 +124,17 @@
         });
     }
 
+    /**
+     * @function init
+     */
     client.init = () => {
         client.listenPopupHandler();
         client.listenFormSubmit();
     }
-    
+
+    /**
+     * When the page is ready
+     */
     $(document).ready(function () {
         client.init();
     })
