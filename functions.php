@@ -27,7 +27,7 @@ class webManagerLib {
     const VERSION = WM_VERSION;
 
     const ROUTES = [
-        'newTicket', 'listForm' , 'newForm','readForm'
+        'newTicket', 'listForm' , 'newForm','readForm', 'updateForm', 'deleteForm'
     ];
 
 
@@ -66,8 +66,47 @@ class webManagerLib {
     public static function load_admin_custom_be_styles() {
         wp_register_style('webManageBEStyles', plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'css/wm_backend.css', false, '0.0.1' );
         wp_enqueue_style( 'webManageBEStyles' );
+
+        /*
+             * I recommend to add additional conditions just to not to load the scipts on each page
+             * like:
+             * if ( !in_array('post-new.php','post.php') ) return;
+             */
+        if ( ! did_action( 'wp_enqueue_media' ) ) {
+            wp_enqueue_media();
+        }
+
         wp_enqueue_script('jquery');
         wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/wm_backend.js', array('jquery'), self::VERSION, true);
+
+    }
+
+    /*
+         * @param string $name Name of option or name of post custom field.
+         * @param string $value Optional Attachment ID
+         * @return string HTML of the Upload Button
+         */
+    public static function wm_image_uploader_field( $name, $value = '') {
+        $image = ' button">Upload image';
+        $image_size = 'full'; // it would be better to use thumbnail size here (150x150 or so)
+        $display = 'none'; // display state ot the "Remove image" button
+
+        if( $image_attributes = wp_get_attachment_image_src( $value, $image_size ) ) {
+
+            // $image_attributes[0] - image URL
+            // $image_attributes[1] - image width
+            // $image_attributes[2] - image height
+
+            $image = '"><img src="' . $image_attributes[0] . '" style="display:block;margin-bottom:15px;" />';
+            $display = 'inline-block';
+
+        }
+
+        return '<div>
+                    <a href="#" class="wm_upload_image_button' . $image . '</a>
+                    <input type="hidden" name="' . $name . '" id="' . $name . '" value="' . $value . '" />
+                    <a href="#" class="wm_remove_image_button" style="display:inline-block;display:' . $display . '">Remove image</a>
+                </div>';
     }
 
     public static function enqueue_frontend_scripts() {
@@ -120,10 +159,21 @@ class webManagerLib {
 
     public static function getWMPopupShortCode($att, $content) {
         $popup_id = isset($att['popup_id']) && !is_null($att['popup_id']) && (int)$att['popup_id'] > 0 ? $att['popup_id'] : false;
+        $popupHtml = "";
+
         if (!$popup_id) {
             $popupHtml = "Pop Oops";
         } else {
             $popupStr = htmlspecialchars(file_get_contents(self::PLUGIN_PATH . self::FRONTEND_ASSET . 'popup.html'));
+
+            self::wmReadPopup($popup_id, function ($err, $popupData) use (&$popupStr, &$popupHtml) {
+                if (!$err && $popupData) {
+                    print_r(array($popupData, $popupStr));
+                } else {
+                    print_r($err);
+                }
+            });
+
             $popupHtml = htmlspecialchars_decode($popupStr);
         }
 
@@ -174,6 +224,25 @@ class webManagerLib {
         return empty($result) ? false : $result;
     }
 
+    public static function wmReadPopup($popup_id, $callback) {
+        $popup_id = isset($popup_id) && !is_null($popup_id) && (int)$popup_id > 0 ? $popup_id : false;
+        if (!$popup_id) {
+            $callback("Mising some required field");
+        } else {
+            global $wpdb;
+            $tableName =  $wpdb->prefix . self::POPUP_TABLE_NAME;
+            $sql = `SELECT * FROM ${$tableName} WHERE popup_id = ${$popup_id} LIMIT 1`;
+            $result = $wpdb->get_results( $sql, OBJECT );
+            $popup = null;
+            if ($result) $popup = $result[0];
+            if (!$popup) {
+                $callback("Cannot get this form", null);
+            } else {
+                $callback(false, $popup);
+            }
+        }
+    }
+
     public static function wmNewForm($formArr, $callback) {
         global $wpdb;
         $formTable = $wpdb->prefix . self::FORM_TABLE_NAME;
@@ -205,21 +274,62 @@ class webManagerLib {
         }
     }
 
-    public static function wmUpdateForm($form_id, $callback) {
-
+    public static function wmUpdateForm($form_id, $formData, $callback) {
+        $form_id = isset($form_id) && !is_null($form_id) && (int)$form_id > 0 ? $form_id : false;
+        $formData = isset($formData) && is_array($formData) && count($formData) > 0 ? $formData : false;
+        if (!$form_id) {
+            $callback("Mising some required field");
+        } elseif (!$formData) {
+            $callback("Mising some data to update");
+        } else {
+            global $wpdb;
+            $tableName =  $wpdb->prefix . self::FORM_TABLE_NAME;
+            $formDeleted = array("form_id" => $form_id);
+            $result = $wpdb->update($tableName, $formData,$formDeleted, array('form_id' => $form_id));
+            if (!$result) {
+                $callback("Cannot update this form");
+            } else {
+                $callback(false);
+            }
+        }
     }
 
+    public static function wmReadAllForm($callback) {
+        global $wpdb;
+        $tableName =  $wpdb->prefix . self::FORM_TABLE_NAME;
+        $result = $wpdb->get_results( "SELECT * FROM {$tableName}", OBJECT );
+        $forms = null;
+        $err = false;
+        if ($result) $forms = $result;
+        if (!$forms) $err = "Cannot get this form";
+        $callback($err, $forms);
+    }
+
+    public static function wmDeleteForm($form_id, $callback) {
+        $form_id = isset($form_id) && !is_null($form_id) && (int)$form_id > 0 ? $form_id : false;
+        if (!$form_id) {
+            $callback("Mising some required field");
+        } else {
+            global $wpdb;
+            $tableName =  $wpdb->prefix . self::FORM_TABLE_NAME;
+            $formDeleted = array("form_id" => $form_id);
+            $result = $wpdb->delete($tableName, $formDeleted);
+            if (!$result) {
+                $callback("Cannot delete this form");
+            } else {
+                $callback(false);
+            }
+        }
+    }
 
     public static function listFormAPI() {
-        global $wpdb;
-        $tableName = $wpdb->prefix . self::FORM_TABLE_NAME;
-
-        $results = $wpdb->get_results("SELECT * FROM {$tableName}", OBJECT );
-        if (!$results) {
-            wp_send_json_error("Cannot find list form", 400);
-        } else {
-            wp_send_json_success($results);
-        }
+        self::wmReadAllForm(function ($err, $forms) {
+            if (!$err && $forms) {
+                wp_send_json_success($forms);
+            } else {
+                wp_send_json_error("Cannot find list form", 400);
+            }
+        });
         die();
     }
 
@@ -294,6 +404,21 @@ class webManagerLib {
         die();
     }
 
+    public static function deleteFormAPI() {
+        $form_id = isset($_REQUEST['form_id']) && in_array(gettype($_REQUEST['form_id']), ["string", "number"]) && (int)$_REQUEST['form_id'] > 0 ? (int)$_REQUEST['form_id'] : false;
+        if (!$form_id) {
+            wp_send_json_error('Mising some required field', 401);
+        } else {
+            self::wmDeleteForm($form_id, function ($err) {
+                if (!$err) {
+                    wp_send_json_success(true);
+                } else {
+                    wp_send_json_error('Cannot delete this form', 402);
+                }
+            });
+        }
+        die();
+    }
 
     public static function newTicketAPI() {
         //do bên js để dạng json nên giá trị trả về dùng phải encode
@@ -366,7 +491,6 @@ class webManagerLib {
         }
         die();
     }
-
 
     public function sendTicketToCareSoft($options) {
         $options = isset($options) && !is_null($options) && gettype($options) == 'array' ? $options : false;

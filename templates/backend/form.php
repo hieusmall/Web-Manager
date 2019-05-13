@@ -1,8 +1,10 @@
 <?php
 $formPages = ["formList","formUpdate","formNew"];
 $formPage = isset($_GET['currentPage']) && strlen($_GET['currentPage']) > 0 && in_array($_GET['currentPage'] , $formPages) ? $_GET['currentPage'] : "formList";
-$pluginPageUrl = "$_SERVER[PROTOCOL]//$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webManagerForm";
 
+
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+$pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webManagerForm";
 ?>
 <span display="none" id="pluginPageUrl" data-plugin-page-url="<?php echo $pluginPageUrl ?>"></span>
 
@@ -56,24 +58,17 @@ $pluginPageUrl = "$_SERVER[PROTOCOL]//$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page
                  'heading' => "Update Form",
                  'formId' => "formUpdateItem"
              )
-        ];
-        $form_id = isset($_GET['form_id']) && in_array(gettype($_GET['form_id']), ['string', 'number']) && (int)$_GET > 0 ? (int)$_GET : false;
-        ?>
+        ]; ?>
         <div class="wmAdminWrap wrap" data-page-active="<?php echo $formPage ?>">
             <h1 class="wp-heading-inline"><?php echo $pageDataDetail[$formPage]['heading']; ?></h1>
             <a href="<?php echo $pluginPageUrl . '&currentPage=formList' ?>" id="backToListFormBtn" class="page-title-action">Quay Lại Danh Sách</a>
             <form id="<?php echo $pageDataDetail[$formPage]['formId']; ?>" method="post" action="">
-                <?php
-                if ($form_id) {
-                    echo '<input type="hidden" name="form_id" value="'.$form_id.'">';
-
-                }
-                ?>
+                <input type="hidden" name="form_id" value="">
                 <table id="" class="form-table">
                     <tr>
                         <th><span>Tiêu đề Form</span></th>
                         <td>
-                            <input name="title" type="text" value="Chiến dịch kiếm lead ngày 20/5" class="regular-text" placeholder="Chiến dịch ABC">
+                            <input name="title" type="text" value="" class="regular-text" placeholder="Chiến dịch xyz">
                         </td>
                     </tr>
                     <tr>
@@ -88,7 +83,7 @@ $pluginPageUrl = "$_SERVER[PROTOCOL]//$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page
                     <tr>
                         <th><span>url chuyển hướng</span></th>
                         <td>
-                            <input name="directional" type="text" value="https://youtube.com" class="regular-text" placeholder="http://example.vn">
+                            <input name="directional" type="text" value="" class="regular-text" placeholder="http://example.vn">
                         </td>
                     </tr>
                     <tr>
@@ -101,7 +96,7 @@ $pluginPageUrl = "$_SERVER[PROTOCOL]//$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page
                 </p>
             </form>
         </div>
-    <?php } elseif ($formPage == 'formUpdate') {
+    <?php } /* elseif ($formPage == 'formUpdate') {
         ?>
         <div class="wmAdminWrap wrap" data-page-active="formUpdate">
             <h1 class="wp-heading-inline">Sửa Form</h1>
@@ -139,5 +134,5 @@ $pluginPageUrl = "$_SERVER[PROTOCOL]//$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page
                 </p>
             </form>
         </div>
-    <?php }
+    <?php } */
 ?>

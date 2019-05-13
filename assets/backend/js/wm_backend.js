@@ -3,7 +3,7 @@
 
     wmBags.pluginPageUrl = $("#pluginPageUrl").data("pluginPageUrl");
 
-    wmBags.acceptPage = ['formList', 'formNew', 'formUpdate', 'formDelete','popupList'];
+    wmBags.acceptPage = ['formList', 'formNew', 'formUpdate','popupList','popupNew','popupUpdate'];
 
     wmBags.getPageActive = (page) => {
         var $allPageWraps = $(document).find('.wmAdminWrap');
@@ -35,6 +35,7 @@
             }
         });
         return active;*/
+
         var $adminWrap = $(document).find('.wmAdminWrap');
         if ($adminWrap) {
             var acceptPage = wmBags.acceptPage;
@@ -72,15 +73,16 @@
             }
         };
         wmBags.jsonTransPortData(options, function (err, res) {
+            var forms = false;
+
             if (!err && res) {
-                var forms = ['object','array'].includes(typeof res.data) ? res.data : [];
-                makeDataToTable(forms);
-            } else {
-                alert(err);
+                forms = ['object','array'].includes(typeof res.data) ? res.data : [];
             }
+            makeDataToTable(forms);
         });
 
         function makeDataToTable(forms) {
+            forms = typeof forms == 'object' && forms instanceof Array && forms.length > 0 ? forms : [];
             $tbody.html("");
             var pluginPageUrl = wmBags.pluginPageUrl;
             forms.forEach(function (formData) {
@@ -122,9 +124,38 @@
                 var $tr = $(target).closest('tr');
                 var form_id = $tr.data('form_id');
 
+                // If this action is update form
                 if ($target.hasClass('updateFormItem')) {
+                    e.preventDefault(e);
                     window.location = `${pluginPageUrl}&currentPage=formUpdate&form_id=${form_id}` ;
                 }
+
+                // If this action is delete form
+                if ($target.hasClass("deleteFormItem")) {
+                    e.preventDefault(e);
+
+                    var cf = confirm("Bạn có muốn xóa form này ~");
+
+                    if (cf) {
+                        var options = {
+                            type: "get",
+                            data: {
+                                action: "deleteForm",
+                                form_id: form_id
+                            }
+                        }
+
+                        wmBags.jsonTransPortData(options, function (err, res) {
+                            if (!err && res) {
+                                wmBags.formListPage();
+                            } else {
+                                alert("Không thể xóa form này");
+                            }
+                        })
+                    } else {
+                        return false;
+                    }
+                };
             })
         }
 
@@ -134,6 +165,9 @@
             e.preventDefault(e);
             wmBags.getViewHtml('formNew');
         });*/
+
+
+
     }
 
     wmBags.formNewPage = () => {
@@ -184,7 +218,114 @@
     };
 
     wmBags.formUpdatePage = () => {
+        // Load data to form input
+        var $form = $("#formUpdateItem");
+        var form = $form.get(0);
+        var $inputs = $form.find(':input');
+        var query = typeof window.location.search == "string" && window.location.search.trim().length > 0 ? wmBags.queryStringToObj(window.location.search) : false;
+        if (!query) {
+            alert("Không tìm thấy page nài roài");
+        } else {
+            if (query.hasOwnProperty("form_id") && query.form_id) {
+                var {form_id} = query;
+                var options = {
+                    type: 'get',
+                    data: {
+                        action: 'readForm',
+                        form_id: form_id
+                    }
+                };
+                wmBags.jsonTransPortData(options, function (err, res) {
+                    var data = false;
+                    if (!err && res) {
+                        data = res.data;
+                    } else {
+                        alert("Không tìm thấy form này");
+                    }
 
+                    var insertData = wmBags.insertDataToForm(form, data);
+                    if (insertData) {
+
+                    } else {
+                        alert("Không thể thêm dữ liệu vào form");
+                    }
+                });
+            } else {
+                alert("missing required field");
+            }
+        }
+        return false;
+    }
+
+    wmBags.popupNewPage = () => {
+        wmBags.listenUploadMedia();
+    }
+
+    wmBags.listenUploadMedia = () => {
+        // idElem = typeof idElem == "string" && idElem.trim().length > 0 ? idElem : '.wm_upload_image_button';
+        /*
+         * Select/Upload image(s) event
+         */
+        $('body').on('click', '.wm_upload_image_button', function(e){
+            e.preventDefault();
+
+            var button = $(this),
+                custom_uploader = wp.media({
+                    title: 'Background Image',
+                    library : {
+                        // uncomment the next line if you want to attach image to the current post
+                        // uploadedTo : wp.media.view.settings.post.id,
+                        type : 'image'
+                    },
+                    button: {
+                        text: 'Use this image' // button label text
+                    },
+                    multiple: false // for multiple image selection set to true
+                }).on('select', function() { // it also has "open" and "close" events
+                    var attachment = custom_uploader.state().get('selection').first().toJSON();
+                    $(button).removeClass('button')
+                        .html('<img class="wm_true_pre_image_upload" src="' + attachment.url + '" style="display:block;margin-bottom: 10px;" />')
+                        .next().val(attachment.id).next().show();
+                    /* if you sen multiple to true, here is some code for getting the image IDs
+                    var attachments = frame.state().get('selection'),
+                        attachment_ids = new Array(),
+                        i = 0;
+                    attachments.each(function(attachment) {
+                         attachment_ids[i] = attachment['id'];
+                        console.log( attachment );
+                        i++;
+                    });
+                    */
+                }).open();
+        });
+
+        /*
+         * Remove image event
+         */
+        $('body').on('click', '.wm_remove_image_button', function(){
+            $(this).hide().prev().val('').prev().addClass('button').html('Upload image');
+            return false;
+        });
+    }
+
+    wmBags.insertDataToForm = (form, data) => {
+        form = typeof form == 'object' && form.tagName.toLowerCase() == 'form' ? form : false;
+        data = typeof data == 'object' && data instanceof Object && Object.keys(data).length > 0 ? data : false;
+        // If missing require param
+
+        if (!form && !data) return false;
+
+        var $form = $(form);
+        var $inputs = $form.find(':input');
+        $inputs.each(function (i, field) {
+            var {name, type, value, disabled} = field;
+
+            if (["button","submit"].includes(type) || disabled) return false;
+            if (name && data.hasOwnProperty(name)) {
+                $(field).val(data[name]);
+            }
+        });
+        return true;
     }
 
     wmBags.getViewHtml = (view) => {
@@ -200,7 +341,7 @@
         var search = typeof window.location.search == "string" && window.location.search.trim().length > 0 ? window.location.search : false;
         if (!search) return false;
         var query = wmBags.queryStringToObj(search);
-        if (query.hasOwnProperty('page') && query.page == 'webManagerForm')
+        if (query.hasOwnProperty('page') && ['webManagerForm','webManagerPopup'].includes(query.page))
             return true;
         return false;
     }
