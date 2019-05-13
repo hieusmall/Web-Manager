@@ -259,6 +259,40 @@
 
     wmBags.popupNewPage = () => {
         wmBags.listenUploadMedia();
+
+        var $form = $(".wmAdminWrap").find("form.popupForm");
+        console.log($form);
+        $form.off('submit');
+        $form.on('submit', function (e) {
+            e.preventDefault(e);
+            var $inputs = $form.find(':input'),
+                formData = {};
+            $inputs.each(function (i, field) {
+                var {type, name, disabled} = field;
+                if (["submit","button"].includes(type) || disabled) return;
+
+                if (name) {
+                    formData[name] = $(field).val();
+                }
+            })
+
+            var options = {
+                type: "post",
+                data: {
+                    action: "popupNew",
+                    popup: formData
+                }
+            }
+            wmBags.jsonTransPortData(options, function (err, res) {
+                console.log(err,res);
+
+                if (!err && res) {
+
+                } else {
+
+                }
+            });
+        })
     }
 
     wmBags.listenUploadMedia = () => {
@@ -284,7 +318,7 @@
                 }).on('select', function() { // it also has "open" and "close" events
                     var attachment = custom_uploader.state().get('selection').first().toJSON();
                     $(button).removeClass('button')
-                        .html('<img class="wm_true_pre_image_upload" src="' + attachment.url + '" style="display:block;margin-bottom: 10px;" />')
+                        .html('<img class="wm_true_pre_image_upload" src="' + attachment.url + '" style="display:block;width: 100%;margin-bottom: 10px;" />')
                         .next().val(attachment.id).next().show();
                     /* if you sen multiple to true, here is some code for getting the image IDs
                     var attachments = frame.state().get('selection'),

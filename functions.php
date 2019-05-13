@@ -26,10 +26,7 @@ class webManagerLib {
     const FRONTEND_ASSET = self::ASSET . 'frontend/';
     const VERSION = WM_VERSION;
 
-    const ROUTES = [
-        'newTicket', 'listForm' , 'newForm','readForm', 'updateForm', 'deleteForm'
-    ];
-
+    const ROUTES = ['newTicket', 'listForm' , 'newForm','readForm', 'updateForm', 'deleteForm'];
 
     const TO_CARESOFT_NOW_ON = 'on';
     const TO_CARESOFT_NOW_OFF = 'off';
@@ -81,34 +78,6 @@ class webManagerLib {
 
     }
 
-    /*
-         * @param string $name Name of option or name of post custom field.
-         * @param string $value Optional Attachment ID
-         * @return string HTML of the Upload Button
-         */
-    public static function wm_image_uploader_field( $name, $value = '') {
-        $image = ' button">Upload image';
-        $image_size = 'full'; // it would be better to use thumbnail size here (150x150 or so)
-        $display = 'none'; // display state ot the "Remove image" button
-
-        if( $image_attributes = wp_get_attachment_image_src( $value, $image_size ) ) {
-
-            // $image_attributes[0] - image URL
-            // $image_attributes[1] - image width
-            // $image_attributes[2] - image height
-
-            $image = '"><img src="' . $image_attributes[0] . '" style="display:block;margin-bottom:15px;" />';
-            $display = 'inline-block';
-
-        }
-
-        return '<div>
-                    <a href="#" class="wm_upload_image_button' . $image . '</a>
-                    <input type="hidden" name="' . $name . '" id="' . $name . '" value="' . $value . '" />
-                    <a href="#" class="wm_remove_image_button" style="display:inline-block;display:' . $display . '">Remove image</a>
-                </div>';
-    }
-
     public static function enqueue_frontend_scripts() {
         wp_register_style('webManageFEStyles', plugin_dir_url(__FILE__) . self::FRONTEND_ASSET . 'css/wm_style.css', true, '0.0.1' );
         wp_enqueue_style( 'webManageFEStyles' );
@@ -131,54 +100,15 @@ class webManagerLib {
             'webManagerPopup', array(__CLASS__, 'webManagerPopup') );
     }
 
+
+
     public static function webManagerGeneral() {
         include (self::PLUGIN_PATH . self::BACKEND_TEMPLATE . 'general.php');
     }
 
-    public static function webManagerForm() {
-        include (self::PLUGIN_PATH . self::BACKEND_TEMPLATE . 'form.php');
-    }
 
-    public static function getWMFormShortCode($att, $content) {
-        $form_id = isset($att['form_id']) && !is_null($att['form_id']) && (int)$att['form_id'] > 0 ? $att['form_id'] : false;
-        if (!$form_id) {
-            $formHtml = "Oops";
-        } else {
-            $formStr = '';
-            // Get this form
-            self::wmReadForm($form_id, function ($err, $form) use (&$formStr, &$formHtml) {
-                if (!$err && $form) {
-                    $formStr = self::getFETemplate((array)$form, 'form');
-                }
 
-                $formHtml = htmlspecialchars_decode($formStr);
-            });
-        }
-        return $formHtml;
-    }
 
-    public static function getWMPopupShortCode($att, $content) {
-        $popup_id = isset($att['popup_id']) && !is_null($att['popup_id']) && (int)$att['popup_id'] > 0 ? $att['popup_id'] : false;
-        $popupHtml = "";
-
-        if (!$popup_id) {
-            $popupHtml = "Pop Oops";
-        } else {
-            $popupStr = htmlspecialchars(file_get_contents(self::PLUGIN_PATH . self::FRONTEND_ASSET . 'popup.html'));
-
-            self::wmReadPopup($popup_id, function ($err, $popupData) use (&$popupStr, &$popupHtml) {
-                if (!$err && $popupData) {
-                    print_r(array($popupData, $popupStr));
-                } else {
-                    print_r($err);
-                }
-            });
-
-            $popupHtml = htmlspecialchars_decode($popupStr);
-        }
-
-        return $popupHtml;
-    }
 
     public static function getFETemplate($arr,$template) {
         $hardStr = htmlspecialchars(file_get_contents(self::PLUGIN_PATH . self::FRONTEND_ASSET  . $template . '.html'));
@@ -202,28 +132,6 @@ class webManagerLib {
         include (self::PLUGIN_PATH . self::BACKEND_TEMPLATE . 'popup.php');
     }
 
-    public static function queryToArray($qry)
-    {
-        $result = array();
-        //string must contain at least one = and cannot be in first position
-        if(strpos($qry,'=')) {
-
-            if(strpos($qry,'?')!==false) {
-                $q = parse_url($qry);
-                $qry = $q['query'];
-            }
-        }else {
-            return false;
-        }
-
-        foreach (explode('&', $qry) as $couple) {
-            list ($key, $val) = explode('=', $couple);
-            $result[$key] = $val;
-        }
-
-        return empty($result) ? false : $result;
-    }
-
     public static function wmReadPopup($popup_id, $callback) {
         $popup_id = isset($popup_id) && !is_null($popup_id) && (int)$popup_id > 0 ? $popup_id : false;
         if (!$popup_id) {
@@ -241,6 +149,66 @@ class webManagerLib {
                 $callback(false, $popup);
             }
         }
+    }
+
+    public static function wmNewPopup($popup, $callback) {
+        global $wpdb;
+        $popupTable = $wpdb->prefix . self::POPUP_TABLE_NAME;
+        $result =  $wpdb->insert( $popupTable, $popup);
+
+        if ($result) {
+            $callback(false);
+        } else {
+            $callback("Cannot create new Popup");
+        }
+    }
+
+    public static function wmUpdatePopup($popup_id , $popupData, $callback) {
+        $error = false;
+        $dataCallback = null;
+        self::wmReadPopup($popup_id, function ($er , $popup) use (&$popupData , &$error,&$dataCallback) {
+            if (!$er) {
+                foreach ($popupData as $key => $val) {
+                    if (array_key_exists($key, $popup))
+                        $popup[$key] = $val;
+                }
+                $updatedPopup = $popup;
+                global $wpdb;
+                $popupTable = $wpdb->prefix . self::POPUP_TABLE_NAME;
+                $result =  $wpdb->insert( $popupTable, $updatedPopup);
+
+                if ($result) {
+                    $dataCallback = $result;
+                } else {
+                    $error = "Cannot Updated popup";
+                }
+            }
+        });
+
+        $callback($error, $dataCallback);
+    }
+
+    public static function wmDeletePopup($popup_id, $callback) {
+        $popup_id = isset($popup_id) && !is_null($popup_id) && (int)$popup_id > 0 ? $popup_id : false;
+        if (!$popup_id) {
+            $callback("Mising some required field");
+        } else {
+            global $wpdb;
+            $tableName =  $wpdb->prefix . self::FORM_TABLE_NAME;
+            $popupDeleted = array("popup_id" => $popup_id);
+            $result = $wpdb->delete($tableName, $popupDeleted);
+            if (!$result) {
+                $callback("Cannot delete this popup");
+            } else {
+                $callback(false);
+            }
+        }
+    }
+
+
+
+    public static function webManagerForm() {
+        include (self::PLUGIN_PATH . self::BACKEND_TEMPLATE . 'form.php');
     }
 
     public static function wmNewForm($formArr, $callback) {
@@ -419,6 +387,10 @@ class webManagerLib {
         }
         die();
     }
+
+
+
+
 
     public static function newTicketAPI() {
         //do bên js để dạng json nên giá trị trả về dùng phải encode
@@ -604,8 +576,104 @@ class webManagerLib {
         return $resultmn;
     }
 
+
+
+
+    public static function getWMFormShortCode($att, $content) {
+        $form_id = isset($att['form_id']) && !is_null($att['form_id']) && (int)$att['form_id'] > 0 ? $att['form_id'] : false;
+        if (!$form_id) {
+            $formHtml = "Oops";
+        } else {
+            $formStr = '';
+            // Get this form
+            self::wmReadForm($form_id, function ($err, $form) use (&$formStr, &$formHtml) {
+                if (!$err && $form) {
+                    $formStr = self::getFETemplate((array)$form, 'form');
+                }
+
+                $formHtml = htmlspecialchars_decode($formStr);
+            });
+        }
+        return $formHtml;
+    }
+
+    public static function getWMPopupShortCode($att, $content) {
+        $popup_id = isset($att['popup_id']) && !is_null($att['popup_id']) && (int)$att['popup_id'] > 0 ? $att['popup_id'] : false;
+        $popupHtml = "";
+
+        if (!$popup_id) {
+            $popupHtml = "Pop Oops";
+        } else {
+            $popupStr = htmlspecialchars(file_get_contents(self::PLUGIN_PATH . self::FRONTEND_ASSET . 'popup.html'));
+
+            self::wmReadPopup($popup_id, function ($err, $popupData) use (&$popupStr, &$popupHtml) {
+                if (!$err && $popupData) {
+                    print_r(array($popupData, $popupStr));
+                } else {
+                    print_r($err);
+                }
+            });
+
+            $popupHtml = htmlspecialchars_decode($popupStr);
+        }
+
+        return $popupHtml;
+    }
+
+
+
     public static function dateTimeNow() {
         return date('Y-m-d H:i:s');
+    }
+
+    public static function queryToArray($qry)
+    {
+        $result = array();
+        //string must contain at least one = and cannot be in first position
+        if(strpos($qry,'=')) {
+
+            if(strpos($qry,'?')!==false) {
+                $q = parse_url($qry);
+                $qry = $q['query'];
+            }
+        }else {
+            return false;
+        }
+
+        foreach (explode('&', $qry) as $couple) {
+            list ($key, $val) = explode('=', $couple);
+            $result[$key] = $val;
+        }
+
+        return empty($result) ? false : $result;
+    }
+
+    /*
+         * @param string $name Name of option or name of post custom field.
+         * @param string $value Optional Attachment ID
+         * @return string HTML of the Upload Button
+         */
+    public static function wm_image_uploader_field( $name, $value = '') {
+        $image = ' button">Upload image';
+        $image_size = 'full'; // it would be better to use thumbnail size here (150x150 or so)
+        $display = 'none'; // display state ot the "Remove image" button
+
+        if( $image_attributes = wp_get_attachment_image_src( $value, $image_size ) ) {
+
+            // $image_attributes[0] - image URL
+            // $image_attributes[1] - image width
+            // $image_attributes[2] - image height
+
+            $image = '"><img src="' . $image_attributes[0] . '" style="display:block;margin-bottom:15px;" />';
+            $display = 'inline-block';
+
+        }
+
+        return '<div>
+                    <a href="#" class="wm_upload_image_button' . $image . '</a>
+                    <input type="hidden" name="' . $name . '" id="' . $name . '" value="' . $value . '" />
+                    <a href="#" class="wm_remove_image_button" style="display:inline-block;display:' . $display . '">Remove image</a>
+                </div>';
     }
 
     /*public static function checkTheStorage() {

@@ -60,7 +60,7 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
 <div class="wmAdminWrap wrap" data-page-active="<?php echo $popupPage ?>">
     <h1 class="wp-heading-inline"><?php echo $pageDataDetail[$popupPage]['heading']; ?></h1>
     <a href="<?php echo $pluginPageUrl . '&currentPage=formList' ?>" id="backToListFormBtn" class="page-title-action">Tất cả Popup</a>
-    <form id="<?php echo $pageDataDetail[$popupPage]['formId']; ?>" method="post" action="">
+    <form id="<?php echo $pageDataDetail[$popupPage]['formId']; ?>" class="popupForm" method="post" action="">
         <input type="hidden" name="popup_id" value="">
         <div id="poststuff">
             <div id="post-body" class="metabox-holder columns-2">
@@ -79,7 +79,7 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                     <?php
                     $content = '';
                     $editor_id = 'content';
-                    wp_editor( $content, $editor_id );
+                    wp_editor( $content, $editor_id , array('media_buttons'=>false));
                     ?>
                 </div>
 
@@ -111,7 +111,7 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                             </h2>
                             <div class="inside">
                                 <div>
-                                    <input name="direction_background" type="text" value="" class="" placeholder="http://example.vn">
+                                    <input style="width: 100%" name="direction_background" type="text" value="" class="" placeholder="http://example.vn">
                                 </div>
                             </div>
                         </div>
