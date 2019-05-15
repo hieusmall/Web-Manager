@@ -12,6 +12,7 @@ $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
 add_action('init', array( 'webManagerLib', 'init' )); // Main Hook
 if ( class_exists('webManagerLib', false) ) return;
 
+
 class webManagerLib {
     const ID = 'webManager';
     const FORM_TABLE_NAME = 'wm_form';
@@ -26,7 +27,8 @@ class webManagerLib {
     const FRONTEND_ASSET = self::ASSET . 'frontend/';
     const VERSION = WM_VERSION;
 
-    const ROUTES = ['newTicket', 'listForm' , 'newForm','readForm', 'updateForm', 'deleteForm'];
+    const ROUTES = ['newTicket', 'listForm' , 'newForm','readForm', 'updateForm', 'deleteForm',
+        'listPopup' , 'newPopup','readPopup', 'updatePopup', 'deletePopup'];
 
     const TO_CARESOFT_NOW_ON = 'on';
     const TO_CARESOFT_NOW_OFF = 'off';
@@ -74,7 +76,7 @@ class webManagerLib {
         }
 
         wp_enqueue_script('jquery');
-        wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/wm_backend.js', array('jquery'), self::VERSION, true);
+        wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/wm_backend.js', array('jquery','jquery-ui-droppable','jquery-ui-draggable', 'jquery-ui-sortable'), self::VERSION, true);
 
     }
 
@@ -132,6 +134,17 @@ class webManagerLib {
         include (self::PLUGIN_PATH . self::BACKEND_TEMPLATE . 'popup.php');
     }
 
+    public static function wmReadAllPopup($callback) {
+        global $wpdb;
+        $tableName =  $wpdb->prefix . self::POPUP_TABLE_NAME;
+        $result = $wpdb->get_results( "SELECT * FROM {$tableName}", OBJECT );
+        $popups = null;
+        $err = false;
+        if ($result) $popups = $result;
+        if (!$popups) $err = "Cannot get this form";
+        $callback($err, $popups);
+    }
+
     public static function wmReadPopup($popup_id, $callback) {
         $popup_id = isset($popup_id) && !is_null($popup_id) && (int)$popup_id > 0 ? $popup_id : false;
         if (!$popup_id) {
@@ -139,10 +152,11 @@ class webManagerLib {
         } else {
             global $wpdb;
             $tableName =  $wpdb->prefix . self::POPUP_TABLE_NAME;
-            $sql = `SELECT * FROM ${$tableName} WHERE popup_id = ${$popup_id} LIMIT 1`;
+            $sql = 'SELECT * FROM '.$tableName.' WHERE popup_id = '.$popup_id.' LIMIT 1';
             $result = $wpdb->get_results( $sql, OBJECT );
             $popup = null;
             if ($result) $popup = $result[0];
+
             if (!$popup) {
                 $callback("Cannot get this form", null);
             } else {
@@ -166,24 +180,26 @@ class webManagerLib {
     public static function wmUpdatePopup($popup_id , $popupData, $callback) {
         $error = false;
         $dataCallback = null;
-        self::wmReadPopup($popup_id, function ($er , $popup) use (&$popupData , &$error,&$dataCallback) {
-            if (!$er) {
-                foreach ($popupData as $key => $val) {
-                    if (array_key_exists($key, $popup))
-                        $popup[$key] = $val;
-                }
-                $updatedPopup = $popup;
-                global $wpdb;
-                $popupTable = $wpdb->prefix . self::POPUP_TABLE_NAME;
-                $result =  $wpdb->insert( $popupTable, $updatedPopup);
-
-                if ($result) {
-                    $dataCallback = $result;
+        $popup_id = isset($popup_id) && (int)$popup_id > 0 ? $popup_id : false;
+        $popupData = isset($popupData) && gettype($popupData) == "array" ? $popupData : false;
+        if (!$popup_id && !$popupData) {
+            $error = "Missing require data to update";
+        } else {
+            self::wmReadPopup($popup_id, function ($er ,$popup) use (&$popupData , &$error, &$dataCallback) {
+                if (!$er) {
+                    global $wpdb;
+                    $popupTable = $wpdb->prefix . self::POPUP_TABLE_NAME;
+                    $result =  $wpdb->update($popupTable, $popupData, array('popup_id' => $popup->popup_id));
+                    if ($result) {
+                        $dataCallback = $result;
+                    } else {
+                        $error = "Cannot Updated popup";
+                    }
                 } else {
-                    $error = "Cannot Updated popup";
+                    $error = $er;
                 }
-            }
-        });
+            });
+        }
 
         $callback($error, $dataCallback);
     }
@@ -194,7 +210,7 @@ class webManagerLib {
             $callback("Mising some required field");
         } else {
             global $wpdb;
-            $tableName =  $wpdb->prefix . self::FORM_TABLE_NAME;
+            $tableName =  $wpdb->prefix . self::POPUP_TABLE_NAME;
             $popupDeleted = array("popup_id" => $popup_id);
             $result = $wpdb->delete($tableName, $popupDeleted);
             if (!$result) {
@@ -204,6 +220,134 @@ class webManagerLib {
             }
         }
     }
+
+    public static function listPopupAPI() {
+        self::wmReadPopup(function ($err, $popups) {
+            if (!$err && $popups) {
+                wp_send_json_success($popups);
+            } else {
+                wp_send_json_error("Cannot find list form", 400);
+            }
+        });
+        die();
+    }
+
+    public static function newPopupAPI() {
+
+        $popupData = isset($_REQUEST['popup']) && gettype($_REQUEST['popup']) == 'array' && count($_REQUEST['popup']) > 0 ? $_REQUEST['popup'] : false;
+
+        if (!$popupData) {
+            wp_send_json_error("Missing some field", 400);
+        } else {
+            $title = isset($popupData['title']) && gettype($popupData['title']) == "string" && strlen($popupData['title']) > 0 ? $popupData['title'] : false;
+
+            // Check the require field
+            $bg_image_id = isset($popupData['bg_image_id']) && !is_null($popupData['bg_image_id']) && (int)$popupData['bg_image_id'] > 0 ? $popupData['bg_image_id'] : null;
+            $content = isset($popupData['content']) && !is_null($popupData['content'])  && gettype($popupData['content']) == "string" ? str_replace('\"', '"', $popupData['content']) : null;
+            $delay_show_time = isset($popupData['delay_show_time']) && !is_null($popupData['delay_show_time']) && (int)$popupData['delay_show_time'] > 0 ? $popupData['delay_show_time'] : null;
+            $direction_background = isset($popupData['direction_background']) && !is_null($popupData['direction_background']) && gettype($popupData['direction_background']) == "string" && filter_var($popupData['direction_background'], FILTER_VALIDATE_URL) ? $popupData['direction_background'] : null;
+            $form_id = isset($popupData['form_id']) && (int)$popupData['form_id'] > 0 ? (int)$popupData['form_id'] : null;
+            $time =  date('Y-m-d H:i:s');
+
+            // If missing required field
+            if (!$title)
+                wp_send_json_error("Missing require fields", 401);
+
+            $arr = array(
+                'title' => $title,
+                'bg_image_id' => $bg_image_id,
+                'form_id' => $form_id,
+                'content' => $content,
+                'direction_background' => $direction_background,
+                'delay_show_time' => $delay_show_time,
+                'created_at' => $time,
+                'updated_at' => $time
+            );
+
+            self::wmNewPopup($arr, function ($err) {
+                if (!$err) {
+                    wp_send_json_success(true);
+                } else {
+                    wp_send_json_error("Cannot create new popup", 402);
+                }
+            });
+        }
+        die();
+    }
+
+    public static function readPopupAPI() {
+        $popup_id = isset($_REQUEST['popup_id']) && in_array(gettype($_REQUEST['popup_id']), ["string", "number"]) && (int)$_REQUEST['popup_id'] > 0 ? (int)$_REQUEST['popup_id'] : false;
+        if (!$popup_id) {
+            wp_send_json_error('Mising some required field', 401);
+        } else {
+            self::wmReadPopup($popup_id, function ($err, $popup) {
+                if (!$err && $popup) {
+                    wp_send_json_success($popup);
+                } else {
+                    wp_send_json_error('Cannot find this popup', 405);
+                }
+            });
+        }
+        die();
+    }
+
+    public static function updatePopupAPI() {
+        $popupUpdated = isset($_REQUEST['popup']) && gettype($_REQUEST['popup']) == "array" && (int)$_REQUEST['popup'] > 0 ? $_REQUEST['popup'] : false;
+        if (!$popupUpdated) {
+            wp_send_json_error('Mising some required field', 401);
+        } else {
+            $popup_id = isset($popupUpdated['popup_id']) && in_array(gettype($popupUpdated['popup_id']), ["string", "number"]) && (int)$popupUpdated['popup_id'] > 0 ? (int)$popupUpdated['popup_id'] : false;
+            if (!$popup_id) {
+                wp_send_json_error('Mising some required field', 402);
+            } else {
+                $title = isset($popupUpdated['title']) && gettype($popupUpdated['title']) == "string" && strlen($popupUpdated['title']) > 0 ? $popupUpdated['title'] : null;
+                $content = isset($popupUpdated['content']) && gettype($popupUpdated['content']) == "string" && strlen($popupUpdated['content']) > 0 ? self::htmlVerifyCodeToDb($popupUpdated['content']) : null;
+                $bg_image_id = isset($popupUpdated['bg_image_id']) && (int)$popupUpdated['bg_image_id'] > 0 ? $popupUpdated['bg_image_id'] : null;
+                $direction_background = isset($popupUpdated['direction_background']) && gettype($popupUpdated['direction_background']) == "string" ? $popupUpdated['direction_background'] : null;
+                $form_id = isset($popupUpdated['form_id']) && (int)$popupUpdated['form_id'] > 0 ? $popupUpdated['form_id'] : null;
+                $delay_show_time = isset($popupUpdated['delay_show_time']) && (int)$popupUpdated['delay_show_time'] > 0 ? $popupUpdated['delay_show_time'] : null;
+                $updated_at = self::dateTimeNow();
+
+                $args = array(
+                    'title'=> $title,
+                    'content'=> $content,
+                    'bg_image_id'=> $bg_image_id,
+                    'direction_background'=> $direction_background,
+                    'form_id'=> $form_id,
+                    'delay_show_time'=> $delay_show_time,
+                    'updated_at'=> $updated_at
+                );
+
+                self::wmUpdatePopup($popup_id, $args, function ($err) {
+                    if (!$err) {
+                        wp_send_json_success(true);
+                    } else {
+                        wp_send_json_error($err, 405);
+                    }
+                });
+            }
+        }
+        die();
+    }
+
+    public static function deletePopupAPI() {
+        $popup_id = isset($_REQUEST['popup_id']) && in_array(gettype($_REQUEST['popup_id']), ["string", "number"]) && (int)$_REQUEST['popup_id'] > 0 ? (int)$_REQUEST['popup_id'] : false;
+        if (!$popup_id) {
+            wp_send_json_error('Mising some required field', 401);
+        } else {
+            self::wmDeletePopup($popup_id, function ($err) {
+                if (!$err) {
+                    wp_send_json_success(true);
+                } else {
+                    wp_send_json_error('Cannot delete this popup', 402);
+                }
+            });
+        }
+        die();
+    }
+
+
+
 
 
 
@@ -252,8 +396,7 @@ class webManagerLib {
         } else {
             global $wpdb;
             $tableName =  $wpdb->prefix . self::FORM_TABLE_NAME;
-            $formDeleted = array("form_id" => $form_id);
-            $result = $wpdb->update($tableName, $formData,$formDeleted, array('form_id' => $form_id));
+            $result = $wpdb->update($tableName, $formData, array('form_id' => $form_id));
             if (!$result) {
                 $callback("Cannot update this form");
             } else {
@@ -351,23 +494,28 @@ class webManagerLib {
     }
 
     public static function updateFormAPI() {
-        $form_id = isset($_REQUEST['form_id']) && in_array(gettype($_REQUEST['form_id']), ["string", "number"]) && (int)$_REQUEST['form_id'] > 0 ? (int)$_REQUEST['form_id'] : false;
-        if (!$form_id) {
+        $form = isset($_REQUEST['form']) && gettype($_REQUEST['form']) == 'array' && count($_REQUEST['form']) > 0 ? $_REQUEST['form'] : false;
+        if (!$form) {
             wp_send_json_error('Mising some required field', 401);
         } else {
-            self::wmReadForm($form_id, function ($err, $formData) use (&$form_id) {
-                if (!$err && $formData) {
-                    self::wmUpdateForm($form_id, function ($err) {
-                        if (!$err) {
-                            wp_send_json_success(true);
-                        } else {
-                            wp_send_json_error('Cannot update this form', 405);
-                        }
-                    });
-                } else {
-                    wp_send_json_error('Cannot find this form', 402);
-                }
-            });
+            $form_id = isset($form['form_id']) && in_array(gettype($form['form_id']), ["string", "number"]) && (int)$form['form_id'] > 0 ? (int)$form['form_id'] : false;
+            if (!$form_id) {
+                wp_send_json_error('Mising some required field', 401);
+            } else {
+
+                $form['title'] = isset($form['title']) && gettype($form['title']) == "string" && strlen($form['title']) > 0 ? $form['title'] : null;
+                $form['to_caresoft_now'] = isset($form['to_caresoft_now']) && in_array($form['to_caresoft_now'], ['on','off']) ? $form['to_caresoft_now'] : null;
+                $form['directional'] = isset($form['directional']) && gettype($form['directional']) == "string" && strlen($form['directional']) > 0 ? $form['directional'] : null;
+                $form['caresoft_id'] = isset($form['caresoft_id']) && (int)$form['caresoft_id'] > 0 ? $form['caresoft_id'] : null;
+
+                self::wmUpdateForm($form_id, $form, function ($err) {
+                    if (!$err) {
+                        wp_send_json_success(true);
+                    } else {
+                        wp_send_json_error('Cannot update this form', 405);
+                    }
+                });
+            }
         }
         die();
     }
@@ -579,7 +727,7 @@ class webManagerLib {
 
 
 
-    public static function getWMFormShortCode($att, $content) {
+    public static function getWMFormShortCode($att, $content = null) {
         $form_id = isset($att['form_id']) && !is_null($att['form_id']) && (int)$att['form_id'] > 0 ? $att['form_id'] : false;
         if (!$form_id) {
             $formHtml = "Oops";
@@ -597,33 +745,60 @@ class webManagerLib {
         return $formHtml;
     }
 
-    public static function getWMPopupShortCode($att, $content) {
+    public static function getWMPopupShortCode($att, $content = null) {
         $popup_id = isset($att['popup_id']) && !is_null($att['popup_id']) && (int)$att['popup_id'] > 0 ? $att['popup_id'] : false;
-        $popupHtml = "";
+        $button = isset($att['type']) && $att['type'] == 'button' ? $att['type'] : false;
 
+        $popupHtml = "";
         if (!$popup_id) {
             $popupHtml = "Pop Oops";
         } else {
-            $popupStr = htmlspecialchars(file_get_contents(self::PLUGIN_PATH . self::FRONTEND_ASSET . 'popup.html'));
-
-            self::wmReadPopup($popup_id, function ($err, $popupData) use (&$popupStr, &$popupHtml) {
+            $popupStr = '';
+            self::wmReadPopup($popup_id, function ($err, $popupData) use (&$popupStr, &$popupHtml, &$button, &$att) {
                 if (!$err && $popupData) {
-                    print_r(array($popupData, $popupStr));
-                } else {
-                    print_r($err);
+                    $modalIdHtml = self::stringToSlug($popupData->title);
+                    $buttonText = isset($att['buttonText']) && gettype($att['buttonText']) == "string" ? $att['buttonText'] : "Mở Popup";
+                    if ($button) {
+                        $popupStr = '<button type="button" class="wm-whiteframe-2dp btn btn-primary btn-sm" data-toggle="modal" data-target="#'.$modalIdHtml.'">
+                                    '.$buttonText.'
+                                </button>';
+                    } else {
+                        $form_id = !is_null($popupData->form_id) && $popupData->form_id > 0 ? $popupData->form_id : false;
+                        $popupData->wmForm = null;
+                        // If isset $form_id
+                        if ($form_id)
+                            $wmForm = htmlspecialchars(self::getWMFormShortCode(array("form_id"=>$form_id)));
+                        $popupData->wmForm = $wmForm;
+                        $popupData->modalIdHtml = $modalIdHtml;
+
+                        $bg_image = self::getImageById($popupData->bg_image_id);
+                        $popupData->bg_image = $bg_image ? $bg_image->url : "";
+                        $popupStr = self::getFETemplate((array)$popupData, 'popup');
+                    }
                 }
             });
-
             $popupHtml = htmlspecialchars_decode($popupStr);
         }
 
         return $popupHtml;
     }
 
-
+    public static function htmlVerifyCodeToDb($htmlStr) {
+        return str_replace('\"', '"', $htmlStr);
+    }
 
     public static function dateTimeNow() {
         return date('Y-m-d H:i:s');
+    }
+
+    public static function dateTimeToYMD($datetime) {
+        //Convert it into a timestamp.
+        $timestamp = strtotime($datetime);
+
+        //Convert it to DD-MM-YYYY
+        $dmy = date("d-m-Y", $timestamp);
+
+        return $dmy;
     }
 
     public static function queryToArray($qry)
@@ -648,6 +823,56 @@ class webManagerLib {
         return empty($result) ? false : $result;
     }
 
+    public static function getImageById($id) {
+        $id = isset($id) && (int)$id > 0 ? $id : false;
+        if (!$id) {
+            return false;
+        }
+
+        $a = array("url","width","height");
+        $b = wp_get_attachment_image_src( $id, $size = 'full' );
+        $x = array();
+        foreach ($a as $key => $value) {
+            $x[$value] = $b[$key];
+        }
+        $x = (object)$x;
+//        $url = $image[0]; //- image URL
+//        $width = $image[1]; //- image width
+//        $height = $image[2]; //- image height
+
+        return $x;
+    }
+
+    public static function vn_str_filter ($str){
+        $unicode = array(
+            'a'=>'á|à|ả|ã|ạ|ă|ắ|ặ|ằ|ẳ|ẵ|â|ấ|ầ|ẩ|ẫ|ậ',
+            'd'=>'đ',
+            'e'=>'é|è|ẻ|ẽ|ẹ|ê|ế|ề|ể|ễ|ệ',
+            'i'=>'í|ì|ỉ|ĩ|ị',
+            'o'=>'ó|ò|ỏ|õ|ọ|ô|ố|ồ|ổ|ỗ|ộ|ơ|ớ|ờ|ở|ỡ|ợ',
+            'u'=>'ú|ù|ủ|ũ|ụ|ư|ứ|ừ|ử|ữ|ự',
+            'y'=>'ý|ỳ|ỷ|ỹ|ỵ',
+            'A'=>'Á|À|Ả|Ã|Ạ|Ă|Ắ|Ặ|Ằ|Ẳ|Ẵ|Â|Ấ|Ầ|Ẩ|Ẫ|Ậ',
+            'D'=>'Đ',
+            'E'=>'É|È|Ẻ|Ẽ|Ẹ|Ê|Ế|Ề|Ể|Ễ|Ệ',
+            'I'=>'Í|Ì|Ỉ|Ĩ|Ị',
+            'O'=>'Ó|Ò|Ỏ|Õ|Ọ|Ô|Ố|Ồ|Ổ|Ỗ|Ộ|Ơ|Ớ|Ờ|Ở|Ỡ|Ợ',
+            'U'=>'Ú|Ù|Ủ|Ũ|Ụ|Ư|Ứ|Ừ|Ử|Ữ|Ự',
+            'Y'=>'Ý|Ỳ|Ỷ|Ỹ|Ỵ',
+        );
+
+        foreach($unicode as $nonUnicode=>$uni){
+            $str = preg_replace("/($uni)/i", $nonUnicode, $str);
+        }
+        return $str;
+    }
+
+    public static function stringToSlug($str) {
+        $a = self::vn_str_filter($str);
+        $x = str_replace(" ","_", $a);
+        return $x;
+    }
+
     /*
          * @param string $name Name of option or name of post custom field.
          * @param string $value Optional Attachment ID
@@ -657,6 +882,7 @@ class webManagerLib {
         $image = ' button">Upload image';
         $image_size = 'full'; // it would be better to use thumbnail size here (150x150 or so)
         $display = 'none'; // display state ot the "Remove image" button
+        $hasValue = gettype($value) == "string" && strlen(trim($value)) > 0 ? true : false;
 
         if( $image_attributes = wp_get_attachment_image_src( $value, $image_size ) ) {
 
@@ -664,10 +890,24 @@ class webManagerLib {
             // $image_attributes[1] - image width
             // $image_attributes[2] - image height
 
+            $image = '"><img class="wm-img" src="' . $image_attributes[0] . '" style="margin-bottom:15px;" />';
+            $display = 'inline-block';
+        }
+
+        /*if ($hasValue) {
+            // $image_attributes[0] - image URL
+            // $image_attributes[1] - image width
+            // $image_attributes[2] - image height
+            $image_attributes = wp_get_attachment_image_src( $value, $image_size );
             $image = '"><img src="' . $image_attributes[0] . '" style="display:block;margin-bottom:15px;" />';
             $display = 'inline-block';
 
-        }
+            return '<div>
+                    <a href="#" class="wm_upload_image_button' . $image . '</a>
+                    <input type="hidden" name="' . $name . '" id="' . $name . '" value="' . $value . '" />
+                    <a href="#" class="wm_remove_image_button" style="display:inline-block;display:' . $display . '">Remove image</a>
+                </div>';
+        }*/
 
         return '<div>
                     <a href="#" class="wm_upload_image_button' . $image . '</a>

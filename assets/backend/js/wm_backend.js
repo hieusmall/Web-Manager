@@ -135,7 +135,6 @@
                     e.preventDefault(e);
 
                     var cf = confirm("Bạn có muốn xóa form này ~");
-
                     if (cf) {
                         var options = {
                             type: "get",
@@ -236,20 +235,52 @@
                     }
                 };
                 wmBags.jsonTransPortData(options, function (err, res) {
-                    var data = false;
-                    if (!err && res) {
-                        data = res.data;
+                    var {success, data} = typeof res == "object" ? res : {};
+                    if (!err && success && data) {
+                        var insertData = wmBags.insertDataToForm(form, data);
+                        if (insertData) {
+
+                        } else {
+                            alert("Không thể thêm dữ liệu vào form");
+                        }
                     } else {
                         alert("Không tìm thấy form này");
                     }
-
-                    var insertData = wmBags.insertDataToForm(form, data);
-                    if (insertData) {
-
-                    } else {
-                        alert("Không thể thêm dữ liệu vào form");
-                    }
                 });
+
+                $form.on("submit", function (e) {
+                    e.preventDefault(e);
+                    var formData = {};
+                    $inputs.each(function (i, field) {
+                        var {name, type, disabled, value} = field;
+
+                        if (["button", "submit"].includes(type) || disabled) {
+                            return
+                        }
+
+                        if (name && value) {
+                            formData[name] = $(field).val();
+                        }
+                    })
+
+
+                    var options = {
+                        type: "post",
+                        data: {
+                            action: "updateForm",
+                            form : formData
+                        }
+                    };
+                    wmBags.jsonTransPortData(options, function (err, res) {
+                        var {success, data} = typeof res == "object" ? res : {};
+                        if (!err && success && data) {
+                            var urlRidirect = wmBags.pluginPageUrl;
+                            window.location.href = `${urlRidirect}&currentPage=popupList`
+                        } else {
+                            alert("Cannot update this form");
+                        }
+                    });
+                })
             } else {
                 alert("missing required field");
             }
@@ -257,43 +288,144 @@
         return false;
     }
 
+    wmBags.popupListPage = () => {
+        var $wrap = $(".wmAdminWrap");
+        var $table = $wrap.find(".wmListFormTable");
+        var $tbody = $table.find('tbody');
+        var $trs = $tbody.find('tr.trPopupItem');
+        $trs.off('click');
+        $trs.on('click', function (e) {
+            var target = e.target;
+            var $target = $(target);
+            var $tr = $(target).closest('tr');
+            var popup_id = $tr.data('popup_id');
+
+            // If this action is update form
+            if ($target.hasClass('updatePopupItem')) {
+                e.preventDefault(e);
+                var pluginPageUrl = wmBags.pluginPageUrl,
+                    {popup_id} = $(this).closest('tr.trPopupItem').data();
+                if (popup_id)
+                    window.location = `${pluginPageUrl}&currentPage=popupUpdate&popup_id=${popup_id}`;
+                else
+                    alert("Không tìm thấy popup này!");
+                return false;
+            }
+
+            // If this action is delete form
+            if ($target.hasClass("deletePopupItem")) {
+                e.preventDefault(e);
+                var cf = confirm("Bạn có muốn xóa popup này ~");
+                if (cf) {
+                    var options = {
+                        type: "post",
+                        data: {
+                            action: "deletePopup",
+                            popup_id: popup_id
+                        }
+                    }
+                    wmBags.jsonTransPortData(options, function (err, res) {
+                        var {success, data} = typeof res == "object" ? res : {};
+                        if (!err && success && data) {
+                            // wmBags.popupListPage();
+                            window.location.reload();
+                        } else {
+                            alert("Không thể xóa popup này");
+                        }
+                    })
+                } else {
+                    return false;
+                }
+            };
+        })
+
+        /*var $updateBtn = $wrap.find(".updatePopupItem");
+        $updateBtn.off('click');
+        $updateBtn.on('click', function (e) {
+
+        });
+
+        var $deleteBtn = $wrap.find(".deletePopupItem");
+        $deleteBtn.off('click');
+        $deleteBtn.on('click', function (e) {
+
+        });*/
+    }
+
     wmBags.popupNewPage = () => {
         wmBags.listenUploadMedia();
-
         var $form = $(".wmAdminWrap").find("form.popupForm");
-        console.log($form);
+
         $form.off('submit');
         $form.on('submit', function (e) {
-            e.preventDefault(e);
-            var $inputs = $form.find(':input'),
-                formData = {};
-            $inputs.each(function (i, field) {
-                var {type, name, disabled} = field;
-                if (["submit","button"].includes(type) || disabled) return;
+            var form = this,
+                $form = $(form);
 
-                if (name) {
-                    formData[name] = $(field).val();
-                }
-            })
+            var submitAction = {
+                'popupUpdateItem': updatePopupByForm,
+                'popupNewItem' : newPopupByForm
+            }
 
+            var formId = $form.attr("id");
+            formId = typeof formId == "string" && Object.keys(submitAction).includes(formId) ? formId : false;
+            if (formId) {
+                e.preventDefault(e);
+                var formData = wmBags.getObjFormData(form);
+                submitAction[formId](formData);
+            }
+
+            // Else return false
+            return false;
+        });
+
+
+        function newPopupByForm(data) {
             var options = {
                 type: "post",
                 data: {
-                    action: "popupNew",
-                    popup: formData
+                    action: "newPopup",
+                    popup: data
                 }
             }
             wmBags.jsonTransPortData(options, function (err, res) {
-                console.log(err,res);
-
-                if (!err && res) {
-
+                var data = res.data;
+                if (!err && data) {
+                    var hrefListPopup = wmBags.pluginPageUrl,
+                        url = `${hrefListPopup}&currentPage=popupList`;
+                    window.location = url;
                 } else {
-
+                    alert("Không thể tạo mới popup");
                 }
             });
-        })
+        }
+        function updatePopupByForm(data) {
+            var options = {
+                type: "post",
+                data: {
+                    action: "updatePopup",
+                    popup: data
+                }
+            }
+            wmBags.jsonTransPortData(options, function (err, res) {
+                var {success, data} = typeof res == "object" ? res : {};
+                if (!err && success && data) {
+                    var hrefListPopup = wmBags.pluginPageUrl,
+                        url = `${hrefListPopup}&currentPage=popupList`;
+                    window.location = url;
+                } else {
+                    alert("Không thể cập nhật popup");
+                }
+            });
+        }
+
+
+        //
+        $('body .meta-box-sortables.ui-sortable').sortable();
     }
+
+    wmBags.popupUpdatePage = () => {
+        wmBags.popupNewPage();
+    };
 
     wmBags.listenUploadMedia = () => {
         // idElem = typeof idElem == "string" && idElem.trim().length > 0 ? idElem : '.wm_upload_image_button';
@@ -340,6 +472,44 @@
             $(this).hide().prev().val('').prev().addClass('button').html('Upload image');
             return false;
         });
+    }
+
+    wmBags.getObjFormData = (form) => {
+        var $form = $(form)
+        var $inputs = $form.find(':input'),
+            formData = {};
+
+        function get_tinymce_content(id) {
+            var content;
+            var inputid = id;
+            var editor = tinyMCE.get(inputid);
+            var textArea = jQuery('textarea#' + inputid);
+            if (textArea.length>0 && textArea.is(':visible')) {
+                content = textArea.val();
+            } else {
+                content = editor.getContent();
+            }
+            return content;
+        }
+
+        $inputs.each(function (i, field) {
+            var {type, name, disabled} = field;
+            if (["submit","button"].includes(type) || disabled) return;
+
+            if (name) {
+                if ($(field).hasClass('wp-editor-area')) {
+                    try {
+                        formData[name] = get_tinymce_content(field.id);
+                    } catch (e) {
+                        formData[name] = $(field).val()
+                    }
+                    return;
+                }
+                formData[name] = $(field).val();
+            }
+        });
+
+        return formData;
     }
 
     wmBags.insertDataToForm = (form, data) => {

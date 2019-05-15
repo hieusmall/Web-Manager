@@ -9,18 +9,29 @@
      * @function listenPopupHandler
      */
     client.listenPopupHandler = () => {
+        var $popups = $('.wm-campaign-popup');
         var $showPopupBtns = $('.wmCampaignShowPopup');
         $showPopupBtns.on('click', function (e) {
             var button = this;
             var $b = $(button);
             var buttonData = $b.data();
-            console.log(buttonData);
-        })
-        var $popups = $('.wm-campaign-popup');
+        });
+
         $popups.each(function (i, popup) {
-            var $popup = popup;
+            var $popup = $(popup);
+            var {delayShowTime, popupId} = $popup.data();
 
+            popupId = typeof popupId == 'number' && parseInt(popupId) > 0 ? popupId : false ;
+            delayShowTime = typeof delayShowTime == 'number' && parseInt(delayShowTime) > 0 ? delayShowTime * 1000 : false;
 
+            // Set delaytime
+            if (!delayShowTime) {
+                return;
+            } else {
+                setTimeout(function () {
+                    $popup.modal("show");
+                }, delayShowTime);
+            }
         });
     }
 
@@ -29,11 +40,37 @@
      */
     client.listenFormSubmit = () => {
         var $forms = $('.wm-campaign-form');
+        var $elements = $forms.find(':input');
+
+        // Check required data element
+        $elements.each(function (i, element) {
+            var loopDone = i == $elements.length - 1;
+            var {name, type,id, value, disabled, hidden} = element;
+            var $element = $(element);
+
+            /*// Disabled field
+            if (['note'].includes(name)) {
+                $element.attr("disabled", true);
+                $element.closest(".form-group").hide();
+            }*/
+
+            // required field
+            if (["name","phone"].includes(name)) {
+                $element.attr("required", true)
+                $element.closest('.form-group').find("label")
+                    .append(`<span class="required">   *</span>`);
+            }
+        });
+
         $forms.on('submit', function (e) {
             e.preventDefault();
             var $f = $(this);
+            var $submitBtn = $f.find(".btnSubmit");
             // var snapShot = $f.children().clone();
             var ticket = $f.data();
+
+            // Disabled button submit
+            $submitBtn.attr('disabled', true);
 
             var $fields = $f.find(":input");
             $fields.each(function (i, field) {
@@ -45,11 +82,11 @@
                 var $field = $(field);
                 var {type, disabled, required, value, name, id} = field;
 
-                if (['button', 'submit'].includes(type) || disabled ) return;
-
-                if (name) {
-                    ticket[name] = $field.val();
+                if (['button', 'submit'].includes(type) || disabled ) {
+                    return;
                 }
+
+                if (name) ticket[name] = $field.val();
             });
 
             function reduceThisForm() {
@@ -63,7 +100,7 @@
                 });
             }
 
-            function transPortTicket(ticket, callback) {
+            function transPortTicket(ticket) {
                 // add some optional data
                 var { href, origin, pathname, search } = window.location;
                 var detail = {
@@ -82,8 +119,9 @@
                     }
                 };
 
-                client.jsonTransPortData(options, function (err, data) {
-                    if (!err && data) {
+                client.jsonTransPortData(options, function (err, res) {
+                    var {success, data} = typeof res == "object" ? res : {};
+                    if (!err && success && data) {
                         var donePage = ticket.directional;
                         if (donePage) {
                             window.location = donePage;
@@ -92,7 +130,11 @@
                         }
 
                         reduceThisForm();
+                    } else {
+                        alert("Không thể cập nhật form đăng kí");
                     }
+
+                    $submitBtn.attr("disabled", false);
                     return false;
                 });
             }

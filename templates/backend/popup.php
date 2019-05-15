@@ -6,6 +6,8 @@ $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVE
 $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webManagerPopup";
 ?>
 
+<span display="none" id="pluginPageUrl" data-plugin-page-url="<?php echo $pluginPageUrl ?>"></span>
+
 <?php if ($popupPage == '' || $popupPage == 'popupList') : ?>
 <div class="wmAdminWrap wrap" data-page-active="popupList">
     <h1 class="wp-heading-inline">Danh sách Popup</h1>
@@ -40,7 +42,70 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
             </tr>
             </thead>
             <tbody>
+                <?php
+                $popups = [];
+                webManagerLib::wmReadAllPopup(function ($err, $resultData) use (&$popups) {
+                    if (!$err && $resultData)
+                        $popups = $resultData;
+                });
 
+                foreach ($popups as $key => $popup) {
+                    $popup_id = $popup->popup_id;
+                    $title = $popup->title;
+                    $tdTitle = '<td>
+                                <strong><a id="detailPopupByTitleBtn" class="row-title" href="#" aria-label="'.$title.'">'.$title.'</a></strong>
+                                <div class="row-actions">
+                                    <span class="edit">
+                                        <a class="updatePopupItem" href="'.$pluginPageUrl.'&currentPage=popupUpdate&popup_id='.$popup_id.'" aria-label="Sửa “'.$title.'”">Chỉnh sửa</a> |
+                                    </span>
+                                    <span class="trash">
+                                        <a class="deletePopupItem" href="#" class="submitdelete" aria-label="Bỏ “'.$title.'” vào thùng rác">Xóa</a> |
+                                    </span>
+                                </div>
+                            </td>';
+
+                    $tdForm = '<td><span>Không</span></td>';
+                    $form = false;
+                    $form_id = !is_null($popup->form_id) ? $popup->form_id : false;
+                    if ($form_id)
+                        webManagerLib::wmReadForm($form_id, function ($err, $resultData) use (&$form) {
+                            if (!$err && $resultData) {
+                                $form = $resultData;
+                            }
+                        });
+                    if ($form)
+                        $tdForm = '<td class="categories column-categories" data-colname="Chuyên mục">
+                                    <a href="#">'.$form->title.'</a>
+                                </td>';
+
+                    $tdDelay_show_time = '<td></td>';
+                    $delay_show_time = $popup->delay_show_time;
+                    if ($delay_show_time)
+                        $tdDelay_show_time = '<td class="delayShowTime column-delay_show_time" data-colname="Delay Show">
+                                                <a href="#">'.$delay_show_time.' Giây</a>
+                                            </td>';
+                    $created_at = webManagerLib::dateTimeToYMD($popup->created_at);
+                    $tdCreated_at = '<td class="delayShowTime column-delay_show_time" data-colname="Delay Show">
+                                        <span>'.$created_at.'</span>
+                                    </td>';
+
+                    $shortCode = '[wmPopup popup_id="'.$popup->popup_id.'"]';
+                    $tdShortCode = '<td><code>'.$shortCode.'</code></td>';
+
+                    $tr = '<tr class="trPopupItem" data-popup_id="'.$popup_id.'">
+                            <th scope="row" class="check-column">
+                                <label class="screen-reader-text" for="cb-select-'.$form_id.'">Chọn $title</label>
+                                <input id="cb-select-'.$form_id.'" type="checkbox" name="forms[]" value="'.$form_id.'">
+                                <div class="locked-indicator">
+                                    <span class="locked-indicator-icon" aria-hidden="true"></span>
+                                    <span class="screen-reader-text">“'.$title.'” đã bị khóa</span>
+                                </div>
+                            </th>
+                            '. $tdTitle . $tdForm . $tdDelay_show_time . $tdCreated_at . $tdShortCode .'
+                        </tr>';
+
+                    echo $tr;
+                } ?>
             </tbody>
         </table>
     </form>
@@ -51,24 +116,50 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
         'popupNew' => array(
             'heading' => "Popup Mới",
             'popupId' => "popupNewItem",
+            "submitText" => "Tạo Ngay"
         ),
         'popupUpdate' => array(
             'heading' => "Cập nhật Popup",
-            'popupId' => "popupUpdateItem"
+            'popupId' => "popupUpdateItem",
+            "submitText" => "Cập Nhật"
         )
-    ]; ?>
+    ];
+
+
+$hasPopup = false;
+$popup_id = isset($_REQUEST['popup_id']) && (int)$_REQUEST['popup_id'] > 0 ? $_REQUEST['popup_id'] : false;
+$popup = false;
+if ($popup_id)
+    webManagerLib::wmReadPopup($popup_id, function ($err, $result) use (&$popup, &$hasPopup) {
+        if (!$err && $result)
+            $hasPopup = true;
+        $popup = $result;
+    });
+$popupId = $popupTitle = $popupBGImage = $form_id = $popupContent = $delay_show_time = $direction_background = "";
+if ($popupPage == 'popupUpdate' && $hasPopup) {
+    $popupId = $popup->popup_id;
+    $popupTitle = $popup->title;
+    $popupBGImage = !is_null($popup->bg_image_id) ? $popup->bg_image_id/*wp_get_attachment_image_src( $popup->bg_image_id, 'normal', false )[0]*/ : "";
+    $popupFormId = $popup->form_id;
+    $popupContent = !is_null($popup->content) ? $popup->content : "";
+    $popupDelayShowTime = !is_null($popup->delay_show_time) ? $popup->delay_show_time : "";
+    $popupDirectionBackground = !is_null($popup->direction_background) ? $popup->direction_background : "" ;
+}
+
+?>
 <div class="wmAdminWrap wrap" data-page-active="<?php echo $popupPage ?>">
     <h1 class="wp-heading-inline"><?php echo $pageDataDetail[$popupPage]['heading']; ?></h1>
-    <a href="<?php echo $pluginPageUrl . '&currentPage=formList' ?>" id="backToListFormBtn" class="page-title-action">Tất cả Popup</a>
-    <form id="<?php echo $pageDataDetail[$popupPage]['formId']; ?>" class="popupForm" method="post" action="">
-        <input type="hidden" name="popup_id" value="">
+
+    <a href="<?php echo $pluginPageUrl . '&currentPage=popupList' ?>" id="backToListPopupBtn" class="page-title-action">Tất cả Popup</a>
+    <form id="<?php echo $pageDataDetail[$popupPage]['popupId']; ?>" class="popupForm" method="post" action="">
+        <input type="hidden" name="popup_id" value="<?php echo $popupId ?>">
         <div id="poststuff">
             <div id="post-body" class="metabox-holder columns-2">
                 <div id="post-body-content" style="position: relative;">
                     <div id="titlediv">
                         <div id="titlewrap">
-                            <label class="" id="title-prompt-text" for="title">Nhập tiêu đề Popup</label>
-                            <input type="text" name="title" value="" id="title">
+                            <label class="" id="title-prompt-text" for="title"></label>
+                            <input type="text" name="title" value="<?php echo $popupTitle ?>" id="title">
                         </div>
                         <div class="inside">
                             <div id="edit-slug-box" class="hide-if-no-js">
@@ -77,16 +168,20 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                     </div>
 
                     <?php
-                    $content = '';
+                    $content = $popupContent;
                     $editor_id = 'content';
-                    wp_editor( $content, $editor_id , array('media_buttons'=>false));
+                    wp_editor( $content, $editor_id , array(
+//                            'media_buttons' => false,
+                            'textarea_rows' => 7
+                        )
+                    );
                     ?>
                 </div>
 
                 <div id="postbox-container-1" class="postbox-container">
                     <div id="side-sortables" class="meta-box-sortables ui-sortable">
 
-                        <div id="popup_bg_image" class="postbox" style="display: block;">
+                        <div id="popup_bg_image_id" class="postbox" style="display: block;">
                             <button type="button" class="handlediv" aria-expanded="true">
                                 <span class="screen-reader-text">Chuyển đổi bảng điều khiển: Background Image</span>
                                 <span class="toggle-indicator" aria-hidden="true"></span>
@@ -96,7 +191,7 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                             </h2>
                             <div class="inside">
                                 <p class="hide-if-no-js">
-                                    <?php echo webManagerLib::wm_image_uploader_field('bg_image'); ?>
+                                    <?php echo webManagerLib::wm_image_uploader_field('bg_image_id', $popupBGImage); ?>
                                 </p>
                             </div>
                         </div>
@@ -111,12 +206,12 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                             </h2>
                             <div class="inside">
                                 <div>
-                                    <input style="width: 100%" name="direction_background" type="text" value="" class="" placeholder="http://example.vn">
+                                    <input style="width: 100%" name="direction_background" type="text" value="<?php echo $popupDirectionBackground ?>" class="" placeholder="http://example.vn">
                                 </div>
                             </div>
                         </div>
 
-                        <div id="popup_direction_background" class="postbox">
+                        <div id="popup_submit_wrap" class="postbox">
                             <button type="button" class="handlediv" aria-expanded="true">
                                 <span class="screen-reader-text">Chuyển đổi bảng điều khiển: Lưu Lại</span>
                                 <span class="toggle-indicator" aria-hidden="true"></span>
@@ -126,10 +221,11 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                             </h2>
                             <div class="inside">
                                 <div>
-                                    <button type="submit" name="submit" id="submit" class="button button-primary">Tạo Ngay</button>
+                                    <button type="submit" name="submit" id="submit" class="button button-primary"><?php echo $pageDataDetail[$popupPage]['submitText'] ?></button>
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
@@ -159,27 +255,32 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                                         $options = ``;
                                         foreach ($forms as $key => $form) {
                                             $form_id = $form->form_id;
+                                            $selected = $popupFormId == $form_id ? "selected" : "";
                                             $title = $form->title;
-                                            $options .= '<option value="'.$form_id.'">'.$title.' => (FormID : '.$form_id.')</option>';
+                                            $options .= '<option value="'.$form_id.'" '.$selected.'>'.$title.' => (FormID : '.$form_id.')</option>';
                                         }
                                         ?>
                                         <tr>
                                             <th><span>Form đăng kí</span></th>
                                             <td>
-                                                <select name="to_caresoft_now" id="">
+                                                <select name="form_id" id="">
                                                     <option value="0">Không</option>
                                                     <?php echo $options; ?>
                                                 </select>
                                             </td>
                                         </tr>
-                                    <?php endif; ?>
+                                    <?php endif;
+
+                                    // Delay show time
+                                    $hasDelay = (int)$popupDelayShowTime > 0;
+                                    ?>
                                     <tr>
                                         <th><span>Hiển thị</span></th>
                                         <td>
                                             <label for="isAuto">
-                                                <input name="isAuto" type="checkbox" id="isAuto"> Tự động Sau
+                                                <input name="isAuto" type="checkbox" id="isAuto" <?php echo $hasDelay ? "checked" : "" ?>> Tự động Sau
                                             </label>
-                                            <input name="delay_show_time" type="number" min="0" value="0" placeholder="Mặc định là 0" class="small-text"> Giây
+                                            <input name="delay_show_time" type="number" min="0" value="<?php echo $popupDelayShowTime  ?>" placeholder="Mặc định là 0" class="small-text"> Giây
                                         </td>
                                     </tr>
                                 </table>
