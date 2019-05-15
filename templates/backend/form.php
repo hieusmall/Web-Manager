@@ -91,48 +91,26 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                         <td><input name="caresoft_id" maxlength="5" type="text" value="" class="small-text" placeholder="ID nguồn lead CareSoft hoặc để trống trống"></td>
                     </tr>
                 </table>
-                <p class="submit">
-                    <button type="submit" name="submit" id="submit" class="button button-primary">Tạo Ngay</button>
+                <p class="submit form-action-group">
+                    <button type="submit" name="submit" id="submit" class="button button-primary">
+                        Cập nhật
+                    </button>
+                    <span class="spinner"></span>
                 </p>
             </form>
+
+            <h2>Form Advance Custom</h2>
+            <div class="card makeMagicContactForm wm-card-full wrapper-Editor">
+                <div class="card-body">
+                    <div id="fb-editor" class="wm-fb-editor"></div>
+                </div>
+            </div>
         </div>
-    <?php } /* elseif ($formPage == 'formUpdate') {
-        ?>
-        <div class="wmAdminWrap wrap" data-page-active="formUpdate">
-            <h1 class="wp-heading-inline">Sửa Form</h1>
-            <a href="<?php echo $pluginPageUrl . '&currentPage=formList' ?>" id="backToListFormBtn" class="page-title-action">Quay Lại Danh Sách</a>
-            <form id="formEditItem" method="post" action="">
-                <table id="" class="form-table">
-                    <tr>
-                        <th><span>Tiêu đề Form</span></th>
-                        <td>
-                            <input name="title" type="text" value="" class="regular-text" placeholder="Chiến dịch ABC">
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><span>Gửi lên CareSoft ngay</span></th>
-                        <td>
-                            <select name="to_caresoft_now" id="">
-                                <option value="off" selected="selected">Tắt</option>
-                                <option value="on" >Bật</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><span>url chuyển hướng</span></th>
-                        <td>
-                            <input name="directional" type="text" value="" class="regular-text" placeholder="http://example.vn">
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><span>ID CareSoft</span></th>
-                        <td><input name="caresoft_id" maxlength="5" type="text" value="" class="small-text" placeholder="ID nguồn lead CareSoft hoặc để trống trống"></td>
-                    </tr>
-                </table>
-                <p class="submit">
-                    <button type="submit" name="submit" id="submit" class="button button-primary">Tạo Ngay</button>
-                </p>
-            </form>
-        </div>
-    <?php } */
+    <?php }
 ?>
+
+
+<script src="//formbuilder.online/assets/js/form-builder.min.js"></script>
+<script type="text/javascript">
+
+</script>

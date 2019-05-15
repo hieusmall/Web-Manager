@@ -170,6 +170,73 @@
     }
 
     wmBags.formNewPage = () => {
+        // setup fb-editor
+        var $formEditor = $("fb-editor");
+        $formEditor.html("");
+        var formBuilder = wmBags.formBuilder('fb-editor', {
+            disabledActionButtons: [/*'data'*/,'save'],
+            /*actionButtons: [
+                {
+                    id: 'saveFormCustom',
+                    className: 'btn btn-primary',
+                    label: 'Lưu lại',
+                    type: 'button',
+                    events: {
+                        click: saveCustomForm
+                    }
+                },
+            ],*/
+            controlOrder: [
+                'text',
+                'textarea',
+                'checkbox',
+                'number',
+                'button'
+            ],
+            formData: [
+                {
+                    "type": "text",
+                    "required": true,
+                    "label": "Họ Tên",
+                    "placeholder": "Tên của bạn",
+                    "className": "form-control",
+                    "name": "name",
+                    "subtype": "text",
+                    "maxlength": "200"
+                },
+                {
+                    "type": "text",
+                    "subtype": "tel",
+                    "required": true,
+                    "label": "Số Điện Thoại",
+                    "placeholder": "Số điện thoại của bạn là",
+                    "className": "form-control",
+                    "name": "phone",
+                    "maxlength": "15"
+                },
+                {
+                    "type": "text",
+                    "subtype": "email",
+                    "label": "Email",
+                    "placeholder": "vd : example@email.com",
+                    "className": "form-control",
+                    "name": "email",
+                    "maxlength": "200"
+                },
+                {
+                    "type": "textarea",
+                    "required": true,
+                    "label": "Lời nhắn",
+                    "placeholder": "Bạn quan tâm đến dịch vụ nào của chúng tôi",
+                    "className": "form-control",
+                    "name": "note",
+                    "subtype": "textarea",
+                    "maxlength": "500",
+                    "rows": "3"
+                }
+            ]
+        });
+
         // Listen form submit
         var $form = $("#formNewItem");
         $form.on('submit', function (e) {
@@ -184,6 +251,9 @@
                     formData[name] = $field.val();
                 }
             });
+
+            var customFormTemplate = formBuilder.actions.getData();
+            formData.form_custom_template = customFormTemplate;
 
             var a = Object.keys(formData).length > 0 ? true : false;
             if (a) {
@@ -217,6 +287,20 @@
     };
 
     wmBags.formUpdatePage = () => {
+        // setup fb-editor
+        var $formEditor = $("#fb-editor");
+        $formEditor.html("");
+        var formBuilder = wmBags.formBuilder('fb-editor', {
+            disabledActionButtons: ['data','save'],
+            controlOrder: [
+                'text',
+                'textarea',
+                'checkbox',
+                'number',
+                'button'
+            ],
+        });
+
         // Load data to form input
         var $form = $("#formUpdateItem");
         var form = $form.get(0);
@@ -239,7 +323,9 @@
                     if (!err && success && data) {
                         var insertData = wmBags.insertDataToForm(form, data);
                         if (insertData) {
-
+                            var {form_custom_template} = data;
+                            form_custom_template = typeof form_custom_template == "object" && form_custom_template instanceof Array  ? form_custom_template : [];
+                            formBuilder.actions.setData(form_custom_template)
                         } else {
                             alert("Không thể thêm dữ liệu vào form");
                         }
@@ -261,8 +347,10 @@
                         if (name && value) {
                             formData[name] = $(field).val();
                         }
-                    })
+                    });
 
+                    var customFormTemplate = formBuilder.actions.getData();
+                    formData.form_custom_template = customFormTemplate;
 
                     var options = {
                         type: "post",
@@ -388,8 +476,8 @@
                 }
             }
             wmBags.jsonTransPortData(options, function (err, res) {
-                var data = res.data;
-                if (!err && data) {
+                var {success, data} = typeof res == "object" ? res : {};
+                if (!err && success && data) {
                     var hrefListPopup = wmBags.pluginPageUrl,
                         url = `${hrefListPopup}&currentPage=popupList`;
                     window.location = url;
@@ -554,6 +642,19 @@
         var check = wmBags.checkThisPagePlugin();
         if (check)
             wmBags.loadDataOnPage();
+
+        window.wmBags = wmBags;
+        return false;
+    }
+
+    wmBags.formBuilder = (id, options = null) => {
+        var element = typeof id == "string" && document.getElementById(id) ? document.getElementById(id) : false;
+        var options = typeof options == "object" ? options : {};
+        if (element)
+            return $(element).formBuilder = $(element).formBuilder(options);
+        
+
+
         return false;
     }
 

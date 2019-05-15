@@ -12,7 +12,6 @@ $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
 add_action('init', array( 'webManagerLib', 'init' )); // Main Hook
 if ( class_exists('webManagerLib', false) ) return;
 
-
 class webManagerLib {
     const ID = 'webManager';
     const FORM_TABLE_NAME = 'wm_form';
@@ -169,7 +168,6 @@ class webManagerLib {
         global $wpdb;
         $popupTable = $wpdb->prefix . self::POPUP_TABLE_NAME;
         $result =  $wpdb->insert( $popupTable, $popup);
-
         if ($result) {
             $callback(false);
         } else {
@@ -451,6 +449,7 @@ class webManagerLib {
         } else {
             self::wmReadForm($form_id, function ($err, $form) {
                 if (!$err && $form) {
+                    $form->form_custom_template = !is_null($form->form_custom_template) ? json_decode($form->form_custom_template) : null;
                     wp_send_json_success($form);
                 } else {
                     wp_send_json_error('Cannot find this form', 405);
@@ -470,6 +469,7 @@ class webManagerLib {
             $directional = isset($form['directional']) && is_string($form['directional']) ? $form['directional'] : null;
             $to_caresoft_now = isset($form['to_caresoft_now']) && in_array($form['to_caresoft_now'], ['on','off']) ? $form['to_caresoft_now'] : 'off' ;
             $caresoft_id = isset($form['caresoft_id']) && in_array(gettype($form['caresoft_id']), ['number', 'string']) ? $form['caresoft_id'] : null;
+            $form_custom_template = isset($form['form_custom_template']) && gettype($form['form_custom_template']) == 'array' ? json_encode($form['form_custom_template']) : null;
 
             if (!$title) {
                 wp_send_json_error('Missing required field', 402);
@@ -478,7 +478,8 @@ class webManagerLib {
                     'title' => $title,
                     'directional' => $directional,
                     'to_caresoft_now' => $to_caresoft_now,
-                    'caresoft_id' => $caresoft_id
+                    'caresoft_id' => $caresoft_id,
+                    'form_custom_template' => $form_custom_template
                 );
 
                 self::wmNewForm($newForm, function ($err) {
@@ -507,6 +508,7 @@ class webManagerLib {
                 $form['to_caresoft_now'] = isset($form['to_caresoft_now']) && in_array($form['to_caresoft_now'], ['on','off']) ? $form['to_caresoft_now'] : null;
                 $form['directional'] = isset($form['directional']) && gettype($form['directional']) == "string" && strlen($form['directional']) > 0 ? $form['directional'] : null;
                 $form['caresoft_id'] = isset($form['caresoft_id']) && (int)$form['caresoft_id'] > 0 ? $form['caresoft_id'] : null;
+                $form['form_custom_template'] = isset($form['form_custom_template']) && gettype($form['form_custom_template']) == 'array' ? json_encode($form['form_custom_template']) : null;
 
                 self::wmUpdateForm($form_id, $form, function ($err) {
                     if (!$err) {
@@ -773,6 +775,9 @@ class webManagerLib {
 
                         $bg_image = self::getImageById($popupData->bg_image_id);
                         $popupData->bg_image = $bg_image ? $bg_image->url : "";
+                        $popupData->bg_image_width = $bg_image->width ? $bg_image->width . 'px' : "";
+                        $popupData->bg_image_height = $bg_image->height ? $bg_image->height . 'px' : "";
+
                         $popupStr = self::getFETemplate((array)$popupData, 'popup');
                     }
                 }

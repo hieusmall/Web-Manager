@@ -1,5 +1,48 @@
+@import "../../lib.css";
+
+
 .wm-img {
     width: 100%;
     margin: auto;
     display: block;
+}
+
+.wm-card-full {
+    max-width: 100%;
+    display: block;
+    width: 100%;
+    clear: both;
+    padding: 30px;
+    box-sizing: border-box;
+}
+
+.wm-bg-1 {
+    background-image: url("../img/bg1.png");
+    background-position: center center;
+    background-size: cover;
+    background-color: transparent;
+}
+
+.wmAdminWrap {
+
+}
+
+.makeMagicContactForm {
+    background-image: url("../img/bg1.png");
+    background-position: center center;
+    background-size: cover;
+    background-color: transparent;
+    margin-bottom: 20px;
+}
+
+.frmb .stage-wrap > li.form-field {
+    border: 1px solid #001850;
+}
+
+.form-wrap.form-builder .cb-wrap .form-actions.btn-group {
+    /*display: none;*/
+}
+
+.form-action-group {
+    display: inline-block;
 }
