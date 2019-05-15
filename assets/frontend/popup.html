@@ -3,10 +3,18 @@
 -->
 
 <!-- Modal -->
-<div id="{modalIdHtml}" class="wm-popup wm-campaign-popup modal fade" role="dialog" data-delay-show-time="{delay_show_time}" data-popup-id="{popup_id}">
+<div id="{modalIdHtml}" class="wm-popup wm-campaign-popup modal fade" role="dialog"
+     data-delay-show-time="{delay_show_time}" data-popup-id="{popup_id}"
+     data-directional="{direction_background}">
     <div class="modal-dialog">
         <!-- Modal content-->
-        <div class="wm-popup-content modal-content bg-brand-golden" style="background-color: white; background-image: url('{bg_image}')">
+        <div class="wm-popup-content modal-content bg-brand-golden"
+             style="background-color: white;
+             background-image: url('{bg_image}');
+             width: {bg_image_width};
+             height: {bg_image_height};
+             max-width: 800px;
+             max-height: 500px;">
             <div class="close-popup wm-whiteframe-3dp">
                 <a href="#" class="close" data-dismiss="modal">&times;</a>
             </div>
