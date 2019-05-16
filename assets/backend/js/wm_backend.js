@@ -165,8 +165,6 @@
             wmBags.getViewHtml('formNew');
         });*/
 
-
-
     }
 
     wmBags.formNewPage = () => {
@@ -671,14 +669,16 @@
      * @param callback
      */
     wmBags.jsonTransPortData = ({type, data}, callback) => {
-        var { protocol,origin, pathname } = window.location;
+        var { protocol,origin, hostname,pathname } = window.location;
         var url = `${origin}/wp-admin/admin-ajax.php`;
-        // url = 'https://localhost/ngocdung/beta.thammyvienngocdung.com/public_html/wp-admin/admin-ajax.php';
+        if (hostname == "localhost") {
+            url = 'https://localhost/ngocdung/beta.thammyvienngocdung.com/public_html/wp-admin/admin-ajax.php';
+        }
         var path = '/wp-admin/admin-ajax.php';
         $.ajax({
             type : type, //Phương thức truyền post hoặc get
             dataType : "json", //Dạng dữ liệu trả về xml, json, script, or html
-            url : path, //Đường dẫn chứa hàm xử lý dữ liệu. Mặc định của WP như vậy
+            url : url, //Đường dẫn chứa hàm xử lý dữ liệu. Mặc định của WP như vậy
             data : data,
             success: function(response) {
                 callback(false, response);
