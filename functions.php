@@ -27,6 +27,7 @@ class webManagerLib {
     const FRONTEND_ASSET = self::ASSET . 'frontend/';
     const VERSION = WM_VERSION;
 
+    const PAGES = ["webManagerGeneral","webManagerForm","webManagerPopup"];
     const ROUTES = ['newTicket', 'listForm' , 'newForm','readForm', 'updateForm', 'deleteForm',
         'listPopup' , 'newPopup','readPopup', 'updatePopup', 'deletePopup'];
 
@@ -46,9 +47,16 @@ class webManagerLib {
 
         // If login
         add_action('admin_menu', array( __CLASS__, 'admin_menu' ), 5);
-        // add stylesheets for the plugin's backend
-        add_action('admin_enqueue_scripts', array( __CLASS__, 'load_admin_custom_be_styles' ));
-//        add_action('wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_scripts' ));
+
+        $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
+        $isPage = isset($query["page"]) && in_array($query['page'] ,self::PAGES) ? true : false;
+        if ($isPage) {
+            // add stylesheets for the plugin's backend
+            add_action('admin_enqueue_scripts', array( __CLASS__, 'load_admin_custom_be_styles' ));
+        }
+
+
+        // add_action('wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_scripts' ));
         add_action('wp_footer', array(__CLASS__, 'enqueue_frontend_scripts'));
 
         // Add shortcode
@@ -63,24 +71,20 @@ class webManagerLib {
     }
 
     public static function load_admin_custom_be_styles() {
-        $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
-        $isPage = isset($query["page"]) && in_array(self::PAGES, $query['page']) ? true : false;
-        if ($isPage) {
-            wp_register_style('webManageBEStyles', plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'css/wm_backend.css', false, '0.0.1' );
-            wp_enqueue_style( 'webManageBEStyles' );
+        wp_register_style('webManageBEStyles', plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'css/wm_backend.css', false, '0.0.1' );
+        wp_enqueue_style( 'webManageBEStyles' );
 
-            /*
-                 * I recommend to add additional conditions just to not to load the scipts on each page
-                 * like:
-                 * if ( !in_array('post-new.php','post.php') ) return;
-                 */
-            if ( ! did_action( 'wp_enqueue_media' ) ) {
-                wp_enqueue_media();
-            }
-
-            wp_enqueue_script('jquery');
-            wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/wm_backend.js', array('jquery','jquery-ui-droppable','jquery-ui-draggable', 'jquery-ui-sortable'), self::VERSION, true);
+        /*
+         * I recommend to add additional conditions just to not to load the scipts on each page
+         * like:
+         * if ( !in_array('post-new.php','post.php') ) return;
+         */
+        if ( ! did_action( 'wp_enqueue_media' ) ) {
+            wp_enqueue_media();
         }
+
+        wp_enqueue_script('jquery');
+        wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/wm_backend.js', array('jquery','jquery-ui-droppable','jquery-ui-draggable', 'jquery-ui-sortable'), self::VERSION, true);
     }
 
     public static function enqueue_frontend_scripts() {
