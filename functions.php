@@ -9,6 +9,7 @@
 $method = $_SERVER['REQUEST_METHOD'];
 $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
 
+
 add_action('init', array( 'webManagerLib', 'init' )); // Main Hook
 if ( class_exists('webManagerLib', false) ) return;
 
@@ -62,21 +63,24 @@ class webManagerLib {
     }
 
     public static function load_admin_custom_be_styles() {
-        wp_register_style('webManageBEStyles', plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'css/wm_backend.css', false, '0.0.1' );
-        wp_enqueue_style( 'webManageBEStyles' );
+        $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
+        $isPage = isset($query["page"]) && in_array(self::PAGES, $query['page']) ? true : false;
+        if ($isPage) {
+            wp_register_style('webManageBEStyles', plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'css/wm_backend.css', false, '0.0.1' );
+            wp_enqueue_style( 'webManageBEStyles' );
 
-        /*
-             * I recommend to add additional conditions just to not to load the scipts on each page
-             * like:
-             * if ( !in_array('post-new.php','post.php') ) return;
-             */
-        if ( ! did_action( 'wp_enqueue_media' ) ) {
-            wp_enqueue_media();
+            /*
+                 * I recommend to add additional conditions just to not to load the scipts on each page
+                 * like:
+                 * if ( !in_array('post-new.php','post.php') ) return;
+                 */
+            if ( ! did_action( 'wp_enqueue_media' ) ) {
+                wp_enqueue_media();
+            }
+
+            wp_enqueue_script('jquery');
+            wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/wm_backend.js', array('jquery','jquery-ui-droppable','jquery-ui-draggable', 'jquery-ui-sortable'), self::VERSION, true);
         }
-
-        wp_enqueue_script('jquery');
-        wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/wm_backend.js', array('jquery','jquery-ui-droppable','jquery-ui-draggable', 'jquery-ui-sortable'), self::VERSION, true);
-
     }
 
     public static function enqueue_frontend_scripts() {
