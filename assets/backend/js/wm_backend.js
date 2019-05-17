@@ -674,7 +674,7 @@
         if (hostname == "localhost") {
             url = 'https://localhost/ngocdung/beta.thammyvienngocdung.com/public_html/wp-admin/admin-ajax.php';
         }
-        var path = '/wp-admin/admin-ajax.php';
+        // var path = '/wp-admin/admin-ajax.php';
         $.ajax({
             type : type, //Phương thức truyền post hoặc get
             dataType : "json", //Dạng dữ liệu trả về xml, json, script, or html
