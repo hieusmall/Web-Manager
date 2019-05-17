@@ -3,7 +3,9 @@
 
     wmBags.pluginPageUrl = $("#pluginPageUrl").data("pluginPageUrl");
 
-    wmBags.acceptPage = ['formList', 'formNew', 'formUpdate','popupList','popupNew','popupUpdate'];
+    wmBags.acceptPage = ['formList', 'formNew', 'formUpdate',
+        'popupList','popupNew','popupUpdate',
+    'ticketList','ticketNew','ticketUpdate'];
 
     wmBags.getPageActive = (page) => {
         var $allPageWraps = $(document).find('.wmAdminWrap');
@@ -60,6 +62,12 @@
         }
         return false;
     }
+
+    wmBags.ticketListPage = () => {
+        alert(123);
+    }
+
+
 
     wmBags.formListPage = () => {
         var $formListTable = $(".wmListFormTable");
@@ -631,7 +639,7 @@
         var search = typeof window.location.search == "string" && window.location.search.trim().length > 0 ? window.location.search : false;
         if (!search) return false;
         var query = wmBags.queryStringToObj(search);
-        if (query.hasOwnProperty('page') && ['webManagerForm','webManagerPopup'].includes(query.page))
+        if (query.hasOwnProperty('page') && ['webManagerForm','webManagerPopup','webManagerTicket'].includes(query.page))
             return true;
         return false;
     }
@@ -640,8 +648,12 @@
         var check = wmBags.checkThisPagePlugin();
         if (check)
             wmBags.loadDataOnPage();
-
         window.wmBags = wmBags;
+
+        console.log(check);
+        return false;
+
+
         return false;
     }
 
@@ -672,7 +684,7 @@
         var { protocol,origin, hostname,pathname } = window.location;
         var url = `${origin}/wp-admin/admin-ajax.php`;
         if (hostname == "localhost") {
-            url = 'https://localhost/ngocdung/beta.thammyvienngocdung.com/public_html/wp-admin/admin-ajax.php';
+            url = `${origin}${pathname.replace("admin.php", "admin-ajax.php")}`;
         }
         // var path = '/wp-admin/admin-ajax.php';
         $.ajax({

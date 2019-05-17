@@ -166,10 +166,12 @@
 }
 
 .wm-form .form-group .btnSubmit {
-    /*margin-bottom: 0px;*/
+    /*margin-bottom: 0px;
     background: #001850;
     color: darkgoldenrod;
-    font-weight: 700;
+    font-weight: 700;*/
+    width: 100%;
+    text-transform: uppercase;
 }
 
 .text-left {
@@ -205,7 +207,7 @@
     background-color: #fff !important;
     background-clip: padding-box;
     border: 1px solid #ced4da !important;
-    border-radius: .25rem;
+    /*border-radius: .25rem;*/
     transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
 }
 
@@ -215,7 +217,7 @@
 .wm-form input[type="text"].form-control:focus,
 .wm-form input[type="tel"].form-control:hover,
 .wm-form input[type="tel"].form-control:focus {
-    border-color: #001850 !important;
+    /*border-color: #001850 !important;*/
 }
 
 
@@ -284,4 +286,19 @@
     background-repeat: no-repeat;
     background-size: cover;
     height: 100%;
+    min-height: 500px;
+}
+
+@media (max-width: 991px) {
+    .wm-popup-content {
+        width: 100% !important;
+        background-position: left center !important;
+        min-height: unset;
+    }
+
+    .wm-popup-content .wm-popup-body .wm-col-left,
+    .wm-popup-content .wm-popup-body .wm-col-right {
+        width: 100% !important;
+        float: none !important;
+    }
 }

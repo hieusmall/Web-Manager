@@ -18,6 +18,7 @@ class webManagerLib {
     const FORM_TABLE_NAME = 'wm_form';
     const POPUP_TABLE_NAME = 'wm_popup';
     const TICKET_TABLE_NAME = 'wm_ticket';
+    const CS_ANGENT_TABLE_NAME = 'wm_cs_agent';
 
     const BACKEND_TEMPLATE = 'templates/backend/';
     const FRONTEND_TEMPLATE = 'templates/frontend/';
@@ -27,7 +28,7 @@ class webManagerLib {
     const FRONTEND_ASSET = self::ASSET . 'frontend/';
     const VERSION = WM_VERSION;
 
-    const PAGES = ["webManagerGeneral","webManagerForm","webManagerPopup"];
+    const PAGES = ["webManagerGeneral","webManagerForm","webManagerPopup","webManagerTicket"];
     const ROUTES = ['newTicket', 'listForm' , 'newForm','readForm', 'updateForm', 'deleteForm',
         'listPopup' , 'newPopup','readPopup', 'updatePopup', 'deletePopup'];
 
@@ -107,6 +108,10 @@ class webManagerLib {
         add_submenu_page( 'webManagerGeneral', 'Popup',
             'Popup', 'manage_options',
             'webManagerPopup', array(__CLASS__, 'webManagerPopup') );
+
+        add_submenu_page( 'webManagerGeneral', 'Ticket',
+            'Ticket', 'manage_options',
+            'webManagerTicket', array(__CLASS__, 'webManagerTicket') );
     }
 
 
@@ -117,6 +122,97 @@ class webManagerLib {
 
 
 
+    public static function webManagerTicket() {
+        include (self::PLUGIN_PATH . self::BACKEND_TEMPLATE . 'ticket.php');
+    }
+
+    public static function wmListTickets($callback) {
+        global $wpdb;
+        $tableName =  $wpdb->prefix . self::TICKET_TABLE_NAME;
+        $result = $wpdb->get_results( "SELECT * FROM {$tableName}", OBJECT );
+        $tickets = null;
+        $err = false;
+        if ($result) $tickets = $result;
+        if (!$tickets) $err = "Cannot get this tickets";
+        $callback($err, $tickets);
+    }
+
+    public static function wmTableTicket() {
+        $tickets = [];
+
+        webManagerLib::wmListTickets(function ($err, $list) use (&$tickets) {
+            if (!$err && $list) {
+                $tickets = $list;
+            }
+        });
+
+        $thead = '<thead>
+                <tr>
+                    <td id="cb" class="manage-column column-cb check-column">
+                        <label class="screen-reader-text" for="cb-select-all-1">Chọn toàn bộ</label>
+                        <input id="cb-select-all-1" type="checkbox">
+                    </td>
+                    <th scope="col" class="manage-column column-phone column-primary">
+                        <a href="#"><span>Số điện thoại</span></a>
+                    </th>
+                    <th scope="col" class="manage-column column-name"><span class="wm-text-brand-blue">Họ tên</span></th>
+                    <th scope="col" class="manage-column column-email"><span class="wm-text-brand-blue">Email</span></th>
+                    <th scope="col" class="manage-column column-note"><span class="wm-text-brand-blue">Ghi Chú</span></th>
+                    <th scope="col" class="manage-column column-note">
+                        <a href="#">
+                            <span>Thời gian</span>
+                            <span class="sorting-indicator"></span>
+                        </a>
+                    </th>
+                    <th scope="col" class="manage-column column-caresoft"><span class="wm-text-brand-blue">Ticket CareSoft</span></th>
+                </tr>
+            </thead>';
+        $trs = '';
+        foreach ($tickets as $key => $ticket) {
+            $ticket_id = $ticket->ticket_id;
+            $name = $ticket->name;
+            $phone = $ticket->phone;
+            $note = $ticket->note;
+            $email = $ticket->email;
+            $created = (new DateTime($ticket->created_at))->format('d-m-Y h:m');
+            $caresoft_ticket = !is_null($ticket->caresoft_ticket) ? json_decode($ticket->caresoft_ticket) : false;
+
+
+            $thCheckBox = '<th scope="row" class="check-column">
+                                <label class="screen-reader-text" for="cb-select-'.$ticket_id.'">Chọn '.$name.'</label>
+                                <input id="cb-select-'.$ticket_id.'" type="checkbox" name="tickets[]" value="'.$ticket_id.'">
+                            </th>';
+            $tdTicketPhone = '<td class="phone column-phone has-row-actions column-primary page-phone" data-colname="Số điện thoại">
+                                <a class="row-title" href="#"><span class="">'.$phone.'</span></a>
+                                <div class="row-actions">
+                                    <span class="view"><a href="#">Chi Tiết</a></span> | 
+                                    <span class="trash"><a href="#">Delete</a></span> | 
+                                    <span class="toCareSoft"><a href="#">Lên CareSoft</a></span>
+                                </div>
+                            </td>';
+            $tdTicketName = '<td class="name column-name"><span class="text-primary">'.$name.'</span></td>';
+            $tdTicketEmail = '<td class="email column-email"><span>'.$email.'</span></td>';
+            $tdTicketNote = '<td>'.$note.'</td>';
+            $tdTicketCreated = '<td class="created column-created"><span class="text-center">'.$created.'</span></td>';
+            $tdCareSoft = '<td class="caresoft column-caresoft">'.$caresoft_ticket->ticket_id.'</td>';
+            $trs .= '<tr>';
+            $trs .= $thCheckBox;
+            $trs .= $tdTicketPhone;
+            $trs .= $tdTicketName;
+            $trs .= $tdTicketEmail;
+            $trs .= $tdTicketNote;
+            $trs .= $tdTicketCreated;
+            $trs .= $tdCareSoft;
+            $trs .= '</tr>';
+        }
+        $tbody = '<tbody>'.$trs.'</tbody>';
+        $table = '<table class="wmListFormTable wp-list-table widefat fixed striped posts">
+            '.$thead.'
+            '.$tbody.'
+        </table>';
+
+        return $table;
+    }
 
 
     public static function getFETemplate($arr,$template) {
@@ -148,7 +244,7 @@ class webManagerLib {
         $popups = null;
         $err = false;
         if ($result) $popups = $result;
-        if (!$popups) $err = "Cannot get this form";
+        if (!$popups) $err = "Cannot get this popup";
         $callback($err, $popups);
     }
 
@@ -473,17 +569,18 @@ class webManagerLib {
             wp_send_json_error('Missing required field', 401);
         } else {
             $title = isset($form['title']) && is_string($form['title']) && strlen($form['title']) > 0 ? $form['title'] : false;
-
+            $name = isset($form['name']) && is_string($form['name']) && strlen($form['name']) > 0 ? $form['name'] : false;
             $directional = isset($form['directional']) && is_string($form['directional']) ? $form['directional'] : null;
             $to_caresoft_now = isset($form['to_caresoft_now']) && in_array($form['to_caresoft_now'], ['on','off']) ? $form['to_caresoft_now'] : 'off' ;
-            $caresoft_id = isset($form['caresoft_id']) && in_array(gettype($form['caresoft_id']), ['number', 'string']) ? $form['caresoft_id'] : null;
+            $caresoft_id = isset($form['caresoft_id']) && in_array(gettype($form['caresoft_id']), ['number', 'string']) && strlen((string)$form['caresoft_id']) == 5 ? $form['caresoft_id'] : null;
             $form_custom_template = isset($form['form_custom_template']) && gettype($form['form_custom_template']) == 'array' ? json_encode($form['form_custom_template']) : null;
 
-            if (!$title) {
+            if (!$title || !$name) {
                 wp_send_json_error('Missing required field', 402);
             } else {
                 $newForm = array(
                     'title' => $title,
+                    'name' => $name,
                     'directional' => $directional,
                     'to_caresoft_now' => $to_caresoft_now,
                     'caresoft_id' => $caresoft_id,
@@ -513,9 +610,10 @@ class webManagerLib {
             } else {
 
                 $form['title'] = isset($form['title']) && gettype($form['title']) == "string" && strlen($form['title']) > 0 ? $form['title'] : null;
+                $form['name'] = isset($form['name']) && gettype($form['name']) == "string" && strlen($form['name']) > 0 ? $form['name'] : null;
                 $form['to_caresoft_now'] = isset($form['to_caresoft_now']) && in_array($form['to_caresoft_now'], ['on','off']) ? $form['to_caresoft_now'] : null;
                 $form['directional'] = isset($form['directional']) && gettype($form['directional']) == "string" && strlen($form['directional']) > 0 ? $form['directional'] : null;
-                $form['caresoft_id'] = isset($form['caresoft_id']) && (int)$form['caresoft_id'] > 0 ? $form['caresoft_id'] : null;
+                $form['caresoft_id'] = isset($form['caresoft_id']) && (int)$form['caresoft_id'] > 0 && strlen((string)$form['caresoft_id']) == 5 ? $form['caresoft_id'] : null;
                 $form['form_custom_template'] = isset($form['form_custom_template']) && gettype($form['form_custom_template']) == 'array' ? json_encode($form['form_custom_template']) : null;
 
                 self::wmUpdateForm($form_id, $form, function ($err) {
@@ -547,6 +645,18 @@ class webManagerLib {
     }
 
 
+
+
+    public static function wmListAgents($callback) {
+        global $wpdb;
+        $tableName =  $wpdb->prefix . self::CS_ANGENT_TABLE_NAME;
+        $result = $wpdb->get_results( "SELECT * FROM {$tableName}", OBJECT );
+        $agents = null;
+        $err = false;
+        if ($result) $agents = $result;
+        if (!$agents) $err = "Cannot get agents";
+        $callback($err, $agents);
+    }
 
 
 
@@ -586,23 +696,27 @@ class webManagerLib {
                         // Check and Send data to CareSoft
                         $checkToCareSoftNow = $formData->to_caresoft_now == self::TO_CARESOFT_NOW_ON;
                         if ($checkToCareSoftNow) {
-                            $ticketDetail = isset($newTicket['detail']) && !is_null($newTicket['detail']) ? json_decode($newTicket['detail']) : "";
-                            $title = $ticketDetail->origin . ' - '. $newTicket['name'] . ' - '. $ticketDetail->orgin . $ticketDetail->pathname . ' - ' . $formData->title ;
+                            $ticketDetail = isset($newTicket['detail']) && !is_null($newTicket['detail']) ? json_decode($newTicket['detail']) : false;
+                            $title = "";
+                            if ($ticketDetail) {
+                                $title .= $formData->title . ' - ';
+                            }
+                            $title .= $newTicket['name'] . ' - '. $ticketDetail->href;
                             $ticketComment = $newTicket['note'] ? $newTicket['note'] : "";
                             $email = $newTicket['email'] ? $newTicket['email'] : null;
                             $name = $newTicket['name'];
                             $phone = $newTicket['phone'];
                             $caresoft_id = isset($formData->caresoft_id) ? $formData->caresoft_id : null;
                             $options = array($title, $ticketComment, $email, $phone, $name, $caresoft_id);
-//                            $ticketCareSoft = self::sendTicketToCareSoft($options);
-//
-//                            // If can't send to caresoft
-//                            if (!$ticketCareSoft) {
-//                                // if not find ticketCarsoft
-//
-//                            } else {
-//                                $newTicket['caresoft_ticket'] = json_encode($ticketCareSoft);
-//                            }
+                            $ticketCareSoft = self::sendTicketToCareSoft($options);
+
+                            // If can't send to caresoft
+                            if (!$ticketCareSoft) {
+                                // if not find ticketCarsoft
+
+                            } else {
+                                    $newTicket['caresoft_ticket'] = json_encode($ticketCareSoft);
+                            }
                         }
 
                         $result =  $wpdb->insert( $ticketTable, $newTicket);
@@ -656,13 +770,27 @@ class webManagerLib {
     }
 
     public function getAgentsAssignee() {
-        $urlGet = "https://api.caresoft.vn/tmvngocdung/api/v1/agents";
-        $resultGet = self::getPostData($urlGet);
-        $argsGet = json_decode($resultGet,true);
-        $agents = $argsGet["agents"];
+
+        $careSoftAgents = null;
+        self::wmListAgents(function ($err, $list) use (&$careSoftAgents) {
+            if (!$err && $list) {
+                $careSoftAgents = $list;
+            } else {
+                $urlGet = "https://api.caresoft.vn/tmvngocdung/api/v1/agents";
+                $resultGet = self::getPostData($urlGet);
+                $argsGet = json_decode($resultGet,true);
+                $careSoftAgents = isset($argsGet["agents"]) && gettype($argsGet["agents"]) == "array" && count($argsGet["agents"]) > 0 ? $argsGet["agents"] : null;
+            }
+        });
+
+        $agents = $careSoftAgents ? $careSoftAgents : [];
         $ids = array();
-        $ex = array(15413222, 16185696,16595190,15594858,16650858,19196733,19831065,19833102,19833687,19834329,19834410,22480929,23943516,24881607,24882753,24883884);
+        $ex = array(15413222, 16185696,16595190,15594858,
+            16650858,19196733,19831065,19833102,19833687,
+            19834329,19834410,22480929,23943516,24881607,
+            24882753,24883884);
         foreach ($agents as $val) {
+            $val = (array)$val;
             if (!in_array((int)$val['id'], $ex)) {
                 array_push($ids,(int)$val['id']);
             }
@@ -767,7 +895,7 @@ class webManagerLib {
             self::wmReadPopup($popup_id, function ($err, $popupData) use (&$popupStr, &$popupHtml, &$button, &$att) {
                 if (!$err && $popupData) {
                     $modalIdHtml = self::stringToSlug($popupData->title);
-                    $buttonText = isset($att['buttonText']) && gettype($att['buttonText']) == "string" ? $att['buttonText'] : "Mở Popup";
+                    $buttonText = isset($att['button_text']) && gettype($att['button_text']) == "string" ? $att['button_text'] : "Click Vào Đây";
                     if ($button) {
                         $popupStr = '<button type="button" class="wm-whiteframe-2dp btn btn-primary btn-sm" data-toggle="modal" data-target="#'.$modalIdHtml.'">
                                     '.$buttonText.'

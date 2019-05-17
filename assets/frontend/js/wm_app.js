@@ -117,6 +117,8 @@
                 var $submitBtn = $f.find(".btnSubmit");
                 // var snapShot = $f.children().clone();
                 var ticket = $f.data();
+                var $popup = $f.closest('.wm-campaign-popup');
+
 
                 // Disabled button submit
                 $submitBtn.attr('disabled', true);
@@ -137,6 +139,7 @@
 
                     if (name) ticket[name] = $field.val();
                 });
+
 
                 function reduceThisForm() {
                     $fields.each(function (k, input) {
@@ -179,6 +182,7 @@
                             }
 
                             reduceThisForm();
+                            $popup.modal('hide');
                         } else {
                             alert("Không thể cập nhật form đăng kí");
                         }

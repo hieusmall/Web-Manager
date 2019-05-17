@@ -66,9 +66,16 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                 <input type="hidden" name="form_id" value="">
                 <table id="" class="form-table">
                     <tr>
-                        <th><span>Tiêu đề Form</span></th>
+                        <th><span>Tên Form</span></th>
                         <td>
-                            <input name="title" type="text" value="" class="regular-text" placeholder="Chiến dịch xyz">
+                            <input name="name" type="text" value="" class="regular-text" placeholder="">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><span>Tiêu đề CareSoft</span></th>
+                        <td>
+                            <input name="title" type="text" value="" class="regular-text" placeholder="VD: SEO - Chiến dịch xyz">
+                            <p class="description">Cấu Trúc Tiêu Đề CareSoft : Tiêu Đề - Tên Khách Hàng - URL Bài Viết.</p>
                         </td>
                     </tr>
                     <tr>
@@ -76,7 +83,7 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                         <td>
                             <select name="to_caresoft_now" id="">
                                 <option value="off" selected="selected">Tắt</option>
-                                <option value="on" >Bật</option>
+                                <option value="on">Bật</option>
                             </select>
                         </td>
                     </tr>
