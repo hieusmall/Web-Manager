@@ -715,7 +715,7 @@ class webManagerLib {
                                 // if not find ticketCarsoft
 
                             } else {
-                                    $newTicket['caresoft_ticket'] = json_encode($ticketCareSoft);
+                                $newTicket['caresoft_ticket'] = json_encode($ticketCareSoft);
                             }
                         }
 

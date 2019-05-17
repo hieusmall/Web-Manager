@@ -161,6 +161,7 @@
                         pathname: pathname,
                         search : search
                     };
+                    detail.meta = client.metaTagsDataObj();
                     ticket.detail = detail;
 
                     var options = {
@@ -184,7 +185,7 @@
                             reduceThisForm();
                             $popup.modal('hide');
                         } else {
-                            alert("Không thể cập nhật form đăng kí");
+                            alert("Đăng kí thất bại");
                         }
 
                         $submitBtn.attr("disabled", false);
@@ -229,6 +230,27 @@
             '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
         return !!pattern.test(str);
     }
+
+    client.metaTagsDataObj = () => {
+        var metaDetails = [];
+        $('meta').each(function(i, meta) {
+            var attributes = meta.attributes;
+            var atts = {};
+            for (var k = 0;k < attributes.length;k++) {
+                var metaAtts = attributes[k];
+                var $metaAtts = $(metaAtts);
+                var obj = {};
+                for (var j = 0;j < $metaAtts.length;j++) {
+                    var a = $metaAtts[j];
+                    obj[a.name] = a.value;
+                }
+            }
+            atts = obj;
+            metaDetails.push(atts);
+        });
+        return metaDetails;
+    }
+
 
     /**
      * @function init
