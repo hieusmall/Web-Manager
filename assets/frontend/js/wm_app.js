@@ -73,8 +73,9 @@
 
             var {directional,form_id} = $form.data();
 
-            // Create formElemnts
-            /*var options = {
+            /*// Create formElemnts
+            // TODO : Need Update
+            var options = {
                 type: 'get',
                 data :{
                     'action': 'readForm',
@@ -82,31 +83,36 @@
                 }
             }
             client.jsonTransPortData(options, function (err, res) {
-                var {success, data} = res;
+                var {success, data} = typeof res == "object" ? res : {};
                 if (!err && success && data) {
                     var {form_custom_template} = data;
                     form_custom_template = typeof form_custom_template == "object" && form_custom_template instanceof Array ? form_custom_template : false;
                     var $newForm = $form.clone();
+                    $newForm.html("");
                     // var elementStr = '';
                     if (form_custom_template) {
                         // $form.after($newForm.html(""));
                         form_custom_template.forEach(function (inputObj) {
                             var {className, label, maxlength, name, placeholder, required, subtype, type} = inputObj;
+                            inputObj.class = className;
+                            delete inputObj.className;
+
+                            var attrs = inputObj;
+                            var $formGroup = $("<div class='form-group' />");
                             var elem = "<input />";
+                            // var attrs = {};
                             if (['text','checkbox','number','email'].includes(type)) {
                                 elem = "<input />";
-                            } else if (type == 'textarea') {
-                                elem = "<textarea />";
-                            } else if (type == 'button') {
-                                elem = "<button />";
+                            } else if(['submit','button'].includes(type)) {
+                                elem = `${label}<button />`;
                             }
-                            var $field = $(elem).attr(inputObj);
-                            $newForm.append($field)
-                            console.log($newForm);
-                            // $field.appendTo('');
-                            $form.after($newForm);
-                            $form.remove();
+
+                            var $field = $(elem).attr(attrs);
+                            $formGroup.append($field);
+                            $newForm.append($formGroup)
                         });
+                        $("body").append($newForm);
+
                         // $form.remove();
                         /!*$form.find(':input').each(function (o, input) {
                             var {type, name, id, value, disabled, required} = input;
@@ -234,8 +240,13 @@
         var { protocol,origin, hostname,pathname } = window.location;
         var url = `${origin}/wp-admin/admin-ajax.php`;
         if (hostname == "localhost") {
-            url = `${origin}${pathname.replace("admin.php", "admin-ajax.php")}`;
+            if (url.search('admin.php') > 0) {
+                url = `${origin}${pathname.replace("admin.php", "admin-ajax.php")}`;
+            } else {
+                url = `${origin}${pathname}wp-admin/admin-ajax.php`;
+            }
         }
+
         $.ajax({
             type : type, //Phương thức truyền post hoặc get
             dataType : "json", //Dạng dữ liệu trả về xml, json, script, or html
