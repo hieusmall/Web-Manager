@@ -11,7 +11,7 @@
     client.listenPopupHandler = () => {
         var $popups = $('.wm-campaign-popup');
         var $showPopupBtns = $('.wmCampaignShowPopup, .popup-link.action_button');
-        $showPopupBtns.off("click");
+        // $showPopupBtns.off("click");
         $showPopupBtns.on('click', function (e) {
             e.preventDefault(e);
             var button = this;
