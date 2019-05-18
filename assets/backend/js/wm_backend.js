@@ -95,7 +95,7 @@
             var pluginPageUrl = wmBags.pluginPageUrl;
             forms.forEach(function (formData) {
                 var {form_id, title, directional, to_caresoft_now, created_at, caresoft_id} = formData;
-                var shortcode = `[wpForm form_id="${form_id}"]`;
+                var shortcode = `[wmForm form_id="${form_id}"]`;
                 var tr = `<tr class="trformItem" data-form_id="${form_id}">
                                 <th scope="row" class="check-column">			
                                 <label class="screen-reader-text" for="cb-select-${form_id}">Chọn ${title}</label>
@@ -493,13 +493,19 @@
             });
         }
         function updatePopupByForm(data) {
+            var {isAuto, delay_show_time} = data;
+            if (!isAuto) {
+                delete data.delay_show_time;
+            }
+
             var options = {
                 type: "post",
                 data: {
                     action: "updatePopup",
                     popup: data
                 }
-            }
+            };
+
             wmBags.jsonTransPortData(options, function (err, res) {
                 var {success, data} = typeof res == "object" ? res : {};
                 if (!err && success && data) {
@@ -599,6 +605,12 @@
                     }
                     return;
                 }
+
+                if (type == 'checkbox') {
+                    formData[name] = $(field).prop("checked");
+                    return;
+                }
+
                 formData[name] = $(field).val();
             }
         });
