@@ -52,7 +52,9 @@
             var $elements = $form.find(':input');
 
             var {directional,form_id} = $form.data();
-            var options = {
+
+            // Create formElemnts
+            /*var options = {
                 type: 'get',
                 data :{
                     'action': 'readForm',
@@ -67,6 +69,7 @@
                     var $newForm = $form.clone();
                     // var elementStr = '';
                     if (form_custom_template) {
+                        // $form.after($newForm.html(""));
                         form_custom_template.forEach(function (inputObj) {
                             var {className, label, maxlength, name, placeholder, required, subtype, type} = inputObj;
                             var elem = "<input />";
@@ -77,19 +80,24 @@
                             } else if (type == 'button') {
                                 elem = "<button />";
                             }
-                            $form.after($newForm.html(""));
-                            $form.find($newForm).append($(elem, inputObj))
-                        })
-                        /*$newForm.find(':input').each(function (o, input) {
+                            var $field = $(elem).attr(inputObj);
+                            $newForm.append($field)
+                            console.log($newForm);
+                            // $field.appendTo('');
+                            $form.after($newForm);
+                            $form.remove();
+                        });
+                        // $form.remove();
+                        /!*$form.find(':input').each(function (o, input) {
                             var {type, name, id, value, disabled, required} = input;
 
-                        })*/
-                        console.log(form_custom_template, $newForm.find('input'));
+                        })
+                        console.log(form_custom_template, $newForm.find(':input'));*!/
                     } else {
                         return
                     }
                 }
-            });
+            });*/
 
             // Check required data element
             $elements.each(function (i, element) {
@@ -203,8 +211,11 @@
      * @param callback
      */
     client.jsonTransPortData = ({type, data}, callback) => {
-        var { origin, pathname } = window.location;
-        var url = `${origin + pathname}wp-admin/admin-ajax.php`;
+        var { protocol,origin, hostname,pathname } = window.location;
+        var url = `${origin}/wp-admin/admin-ajax.php`;
+        if (hostname == "localhost") {
+            url = `${origin}${pathname.replace("admin.php", "admin-ajax.php")}`;
+        }
         $.ajax({
             type : type, //Phương thức truyền post hoặc get
             dataType : "json", //Dạng dữ liệu trả về xml, json, script, or html
@@ -258,6 +269,7 @@
     client.init = () => {
         client.listenPopupHandler();
         client.listenFormSubmit();
+        window.client = client;
     }
 
     /**
