@@ -875,7 +875,35 @@ class webManagerLib {
             self::wmReadForm($form_id, function ($err, $form) use (&$formStr, &$formHtml) {
                 if (!$err && $form) {
                     $formStr = self::getFETemplate((array)$form, 'form');
+
+//                    $form_custom_template = !is_null($form->form_custom_template) ? json_decode($form->form_custom_template, true) : false;
+//                    if (!$form_custom_template) {
+//                        $formStr = self::getFETemplate((array)$form, 'form');
+//                    } else {
+//
+//                        $formGroup = '<div class="form-group">
+//                            {field}
+//                        </div>';
+//
+//                        foreach ($form_custom_template as $key => $field) {
+//                            echo "<pre>";
+//                            list($type) = (array)$formGroup;
+//                            print_r(array($formGroup, array_keys($field), $form_custom_template));
+//                            echo "</pre>";
+//
+//                            die();
+//                        }
+//
+//                        $formStr = '<div class="form">
+//                            <form class="wm-campaign-form wm-form" data-directional="{directional}" data-form_id="{form_id}">
+//
+//                            </form>
+//                        </div>';
+//                    }
+
                 }
+
+
 
                 $formHtml = htmlspecialchars_decode($formStr);
             });
@@ -922,6 +950,11 @@ class webManagerLib {
         }
 
         return $popupHtml;
+    }
+
+
+    public static function arrayToInput($arr) {
+        $types = [''];
     }
 
     public static function htmlVerifyCodeToDb($htmlStr) {
