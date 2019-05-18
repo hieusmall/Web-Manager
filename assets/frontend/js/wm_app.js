@@ -11,21 +11,23 @@
     client.listenPopupHandler = () => {
         var $popups = $('.wm-campaign-popup');
         var $showPopupBtns = $('.wmCampaignShowPopup, .popup-link.action_button');
+        $showPopupBtns.off("click");
         $showPopupBtns.on('click', function (e) {
             e.preventDefault(e);
             var button = this;
             var $b = $(button);
             var buttonData = $b.data();
             var {popupName} = buttonData;
-
-            if (popupName) {
-                popupName = typeof $b.attr('href') == "string" ? $b.attr('href').replace("#","") : false;
+            $popups.hide();
+            if (!popupName) {
+                popupName = typeof $b.attr('href') == "string" ? $b.attr('href').replace("#","") : popupName;
             }
 
             $popups.each(function (p, popup) {
                 var $popup = $(popup);
                 var {directional, delayShowTime, popupId} = $popup.data();
                 if (popupName != $popup.attr('id')) {
+                    console.log("Không tìm thấy chiến dịch!");
                     return;
                 }
                 $popup.modal('show');
