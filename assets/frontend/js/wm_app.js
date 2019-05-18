@@ -10,12 +10,18 @@
      */
     client.listenPopupHandler = () => {
         var $popups = $('.wm-campaign-popup');
-        var $showPopupBtns = $('.wmCampaignShowPopup');
+        var $showPopupBtns = $('.wmCampaignShowPopup, .popup-link.action_button');
         $showPopupBtns.on('click', function (e) {
+            e.preventDefault(e);
             var button = this;
             var $b = $(button);
             var buttonData = $b.data();
             var {popupName} = buttonData;
+
+            if (popupName) {
+                popupName = typeof $b.attr('href') == "string" ? $b.attr('href').replace("#","") : false;
+            }
+
             $popups.each(function (p, popup) {
                 var $popup = $(popup);
                 var {directional, delayShowTime, popupId} = $popup.data();
@@ -23,8 +29,8 @@
                     return;
                 }
                 $popup.modal('show');
+                return false;
             });
-            return false;
         });
 
         $popups.each(function (i, popup) {
