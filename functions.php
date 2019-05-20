@@ -41,6 +41,20 @@ class webManagerLib {
 
 
     public static function init() {
+        // add_action('wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_scripts' ));
+        add_action('wp_footer', array(__CLASS__, 'enqueue_frontend_scripts'));
+
+        // Add shortcode
+        add_shortcode('wmForm', array(__CLASS__, 'getWMFormShortCode'));
+        add_shortcode('wmPopup', array(__CLASS__, 'getWMPopupShortCode'));
+
+        foreach (self::ROUTES as $action) {
+            $fn =  $action . 'API';
+            add_action( 'wp_ajax_'.$action, array(__CLASS__, $fn) );
+            add_action( 'wp_ajax_nopriv_'.$action, array(__CLASS__, $fn) );
+        }
+
+
         // Check login
         if (!is_admin() && !is_user_logged_in()) {
             return "Bạn cần phải đăng nhập";
@@ -54,20 +68,6 @@ class webManagerLib {
         if ($isPage) {
             // add stylesheets for the plugin's backend
             add_action('admin_enqueue_scripts', array( __CLASS__, 'load_admin_custom_be_styles' ));
-        }
-
-
-        // add_action('wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_scripts' ));
-        add_action('wp_footer', array(__CLASS__, 'enqueue_frontend_scripts'));
-
-        // Add shortcode
-        add_shortcode('wmForm', array(__CLASS__, 'getWMFormShortCode'));
-        add_shortcode('wmPopup', array(__CLASS__, 'getWMPopupShortCode'));
-
-        foreach (self::ROUTES as $action) {
-            $fn =  $action . 'API';
-            add_action( 'wp_ajax_'.$action, array(__CLASS__, $fn) );
-            add_action( 'wp_ajax_nopriv_'.$action, array(__CLASS__, $fn) );
         }
     }
 
