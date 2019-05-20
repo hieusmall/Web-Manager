@@ -43,7 +43,7 @@ class webManagerLib {
 
 
     public static function init() {
-        // add_action('wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_scripts' ));
+//         add_action('wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_scripts' ));
         add_action('wp_footer', array(__CLASS__, 'enqueue_frontend_scripts'));
 
         // Add shortcode
@@ -56,7 +56,6 @@ class webManagerLib {
             add_action( 'wp_ajax_nopriv_'.$action, array(__CLASS__, $fn) );
         }
 
-
         // Check login
         if (!is_admin() && !is_user_logged_in()) {
             return "Bạn cần phải đăng nhập";
@@ -67,6 +66,7 @@ class webManagerLib {
 
         $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
         $isPage = isset($query["page"]) && in_array($query['page'] ,self::PAGES) ? true : false;
+
         if ($isPage) {
             // add stylesheets for the plugin's backend
             add_action('admin_enqueue_scripts', array( __CLASS__, 'load_admin_custom_be_styles' ));
@@ -94,10 +94,9 @@ class webManagerLib {
         wp_register_style('webManageFEStyles', plugin_dir_url(__FILE__) . self::FRONTEND_ASSET . 'css/wm_style.css', true, '0.0.1' );
         wp_enqueue_style( 'webManageFEStyles' );
         wp_enqueue_script('webManageFEScript');
-        wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::FRONTEND_ASSET . 'js/wm_app.js', array('jquery'), self::VERSION, true);
-        wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/popper.min.js', array('jquery'), self::VERSION, true);
-        wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/js/bootstrap.min.js', array('jquery'), self::VERSION, true);
-
+        wp_enqueue_script(self::ID . 'main_app', plugin_dir_url(__FILE__) . self::FRONTEND_ASSET . 'js/wm_app.js', array('jquery'), self::VERSION, true);
+//        wp_enqueue_script(self::ID . 'popper_app', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/popper.min.js', array('jquery'), self::VERSION, true);
+        wp_enqueue_script(self::ID . 'bootstrap_app', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/js/bootstrap.min.js', array('jquery'), self::VERSION, true);
     }
 
     public static function admin_menu() {

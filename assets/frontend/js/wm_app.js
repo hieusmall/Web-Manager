@@ -140,7 +140,7 @@
                                 });
                                 $field = $select.append($(options));
                                 $formGroup.append($label)
-                                    .append($field);
+                                                    .append($field);
                             } else if(['textarea'].includes(type)) {
                                 $field = $(`<textarea></textarea>`).attr(attrs);
                                 $formGroup.append($label).append($field);
@@ -241,11 +241,11 @@
                     // add some optional data
                     var { href, origin, pathname, search } = window.location;
                     var detail = {
-                            href : href,
-                            origin: origin,
-                            pathname: pathname,
-                            search : search
-                        },
+                        href : href,
+                        origin: origin,
+                        pathname: pathname,
+                        search : search
+                    },
                         options = {
                             type: 'post',
                             data: {

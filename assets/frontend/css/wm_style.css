@@ -3,7 +3,6 @@
 /*@import "../../vendor/bootstrap/css/bootstrap.min.css";*/
 @import "../../lib.css";
 
-
 .wm-text-brand-blue {
     color: #132469;
 }
@@ -293,7 +292,8 @@
     /*background-size: cover;*/
     height: 100%;
     min-height: 500px;
-    background-size: 55%;
+    /*background-size: 55%;*/
+    background-size: contain;
     background-position: top right;
 }
 
