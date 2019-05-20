@@ -73,8 +73,7 @@
 
             var {directional,form_id} = $form.data();
 
-            /*// Create formElemnts
-            // TODO : Need Update
+            // Create formElemnts
             var options = {
                 type: 'get',
                 data :{
@@ -95,35 +94,39 @@
                         form_custom_template.forEach(function (inputObj) {
                             var {className, label, maxlength, name, placeholder, required, subtype, type} = inputObj;
                             inputObj.class = className;
+                            inputObj.type = subtype ? subtype : type;
+
+                            delete inputObj.subtype;
                             delete inputObj.className;
+                            delete inputObj.style;
 
                             var attrs = inputObj;
                             var $formGroup = $("<div class='form-group' />");
                             var elem = "<input />";
+                            var $field = false;
                             // var attrs = {};
                             if (['text','checkbox','number','email'].includes(type)) {
                                 elem = "<input />";
+                                $field = $(elem).attr(attrs);
                             } else if(['submit','button'].includes(type)) {
-                                elem = `${label}<button />`;
+                                elem = `<button>${label}</button>`;
+                                $field = $(elem).attr(attrs);
                             }
 
-                            var $field = $(elem).attr(attrs);
-                            $formGroup.append($field);
-                            $newForm.append($formGroup)
+                            if ($field) {
+                                $formGroup.append($field);
+                                $newForm.append($formGroup)
+                            } else {
+                                return;
+                            }
                         });
-                        $("body").append($newForm);
-
-                        // $form.remove();
-                        /!*$form.find(':input').each(function (o, input) {
-                            var {type, name, id, value, disabled, required} = input;
-
-                        })
-                        console.log(form_custom_template, $newForm.find(':input'));*!/
+                        $form.html($newForm.children());
                     } else {
+                        console.log("Khong the lay form");
                         return
                     }
                 }
-            });*/
+            });
 
             // Check required data element
             $elements.each(function (i, element) {
