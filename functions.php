@@ -26,6 +26,8 @@ class webManagerLib {
     const ASSET = 'assets/';
     const BACKEND_ASSET = self::ASSET . 'backend/';
     const FRONTEND_ASSET = self::ASSET . 'frontend/';
+    const VENDOR_ASSET = self::ASSET . 'vendor/';
+
     const VERSION = WM_VERSION;
 
     const PAGES = ["webManagerGeneral","webManagerForm","webManagerPopup","webManagerTicket"];
@@ -93,6 +95,9 @@ class webManagerLib {
         wp_enqueue_style( 'webManageFEStyles' );
         wp_enqueue_script('webManageFEScript');
         wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::FRONTEND_ASSET . 'js/wm_app.js', array('jquery'), self::VERSION, true);
+        wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/popper.min.js', array('jquery'), self::VERSION, true);
+        wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/js/bootstrap.min.js', array('jquery'), self::VERSION, true);
+
     }
 
     public static function admin_menu() {
