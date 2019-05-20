@@ -80,11 +80,11 @@
     display: inline-block;
     max-width: 360px;
     width: 100%;
-    margin: 20px auto;
+    /*margin: 20px auto;*/
     /*background: #f5f5f58c;*/
 }
 .wm-form {
-    padding: 10px;
+    /*padding: 10px;*/
     /*background: #f5f5f58c;*/
 }
 
@@ -186,7 +186,9 @@
     text-align: center;
 }
 
-.wm-form input ,.wm-form input[type="text"],.wm-form input[type="tel"] {
+/*.wm-form input ,*/
+.wm-form input[type="text"],
+.wm-form input[type="tel"] {
     width: 100%;
     border-width: 1px;
     background-color: white;
@@ -279,14 +281,20 @@
 
 .wm-popup .wm-popup-body {
     overflow: hidden;
+    display: -webkit-flex; /* Safari */
+    -webkit-align-items: center; /* Safari 7.0+ */
+    display: flex;
+    align-items: center;
 }
 
 .wm-popup-content {
-    background-position: center center;
+    /*background-position: center center;*/
     background-repeat: no-repeat;
-    background-size: cover;
+    /*background-size: cover;*/
     height: 100%;
     min-height: 500px;
+    background-size: 55%;
+    background-position: top right;
 }
 
 @media (max-width: 991px) {

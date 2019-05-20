@@ -10,8 +10,8 @@
      */
     client.listenPopupHandler = () => {
         var $popups = $('.wm-campaign-popup');
-        var $showPopupBtns = $('.wmCampaignShowPopup/*, .popup-link.action_button*/');
-        // $showPopupBtns.off("click");
+        var $showPopupBtns = $('.wmCampaignShowPopup, .popup-link.action_button');
+        $showPopupBtns.off("click");
         $showPopupBtns.on('click', function (e) {
             e.preventDefault(e);
             var button = this;
@@ -84,43 +84,93 @@
             client.jsonTransPortData(options, function (err, res) {
                 var {success, data} = typeof res == "object" ? res : {};
                 if (!err && success && data) {
-                    var {form_custom_template} = data;
+                    var {form_custom_template} = data,
+                        $newForm = $form.clone().html("");
                     form_custom_template = typeof form_custom_template == "object" && form_custom_template instanceof Array ? form_custom_template : false;
-                    var $newForm = $form.clone();
-                    $newForm.html("");
+
                     // var elementStr = '';
                     if (form_custom_template) {
-                        // $form.after($newForm.html(""));
                         form_custom_template.forEach(function (inputObj) {
-                            var {className, label, maxlength, name, placeholder, required, subtype, type} = inputObj;
+                            var {className, label, values, maxlength, name, placeholder, required, subtype, type} = inputObj,
+                                $label = $(`<label>${label}</label>`);
                             inputObj.class = className;
                             inputObj.type = subtype ? subtype : type;
 
                             delete inputObj.subtype;
                             delete inputObj.className;
                             delete inputObj.style;
+                            delete inputObj.values;
 
                             var attrs = inputObj;
                             var $formGroup = $("<div class='form-group' />");
+                            var $formCheck = $("<div class='form-check' />");
                             var elem = "<input />";
                             var $field = false;
                             // var attrs = {};
                             if (['text','checkbox','number','email'].includes(type)) {
                                 elem = "<input />";
                                 $field = $(elem).attr(attrs);
+                                $formGroup.append($field);
                             } else if(['submit','button'].includes(type)) {
                                 elem = `<button>${label}</button>`;
                                 $field = $(elem).attr(attrs);
+                                $formGroup = $formGroup.append($field);
+                            } else if (['radio-group', 'radio'].includes(type)) {
+                                var radios = '';
+                                values = typeof values == 'object' && values instanceof Array ? values : [];
+                                values.forEach(function (attr) {
+                                    var {label, value} = attr;
+                                    radios += `<div class="form-check">
+                                        <label class="form-check-label"><input class="form-check-input" type="radio" name="${name}" value="${value}" />  ${label}</label>
+                                    </div>`;
+                                });
+                                $field = $(radios);
+                                $formGroup.append($field);
+                            } else if (['checkbox-group','checkbox'].includes(type)) {
+
+                            } else if (['select'].includes(type)) {
+                                var options = '',
+                                    $select = $("<select></select>");
+                                $select.attr(attrs);
+                                values = typeof values == 'object' && values instanceof Array ? values : [];
+                                values.forEach(function (obj) {
+                                    var {label, value, selected} = obj;
+                                    selected = selected ? true : "";
+                                    options += `<option value="${value}" selected="${selected}">${label}</option>`;
+                                });
+                                $field = $select.append($(options));
+                                $formGroup.append($label)
+                                    .append($field);
+                            } else if(['textarea'].includes(type)) {
+                                $field = $(`<textarea></textarea>`).attr(attrs);
+                                $formGroup.append($label).append($field);
+                            } else if(['autocomplete'].includes(type)) {
+                                attrs.type = "text";
+                                $field = $("<input list='address-list'/>").attr(attrs);
+                                var $datalist = $("<datalist/>").attr('id','address-list'),
+                                    options = '';
+                                values = typeof values == "object" && values instanceof Array ? values : [];
+                                values.forEach(function (obj) {
+                                    var {label, value} = obj;
+                                    options += `<option value="${value}">${label}</option>`;
+                                });
+                                $field.append($datalist.html(options));
+                                $formGroup.append($field);
+                            } else if (['paragraph'].includes(type)) {
+                                console.log(attrs);
                             }
 
+
                             if ($field) {
-                                $formGroup.append($field);
                                 $newForm.append($formGroup)
                             } else {
                                 return;
                             }
                         });
+
+                        // Insert new form to old form
                         $form.html($newForm.children());
+                        $form.data('form-custom',true);
                     } else {
                         console.log("Khong the lay form");
                         return
@@ -149,13 +199,12 @@
             });
 
             $form.on('submit', function (e) {
-                e.preventDefault();
+                e.preventDefault(e);
                 var $f = $(this);
                 var $submitBtn = $f.find(".btnSubmit");
                 // var snapShot = $f.children().clone();
                 var ticket = $f.data();
                 var $popup = $f.closest('.wm-campaign-popup');
-
 
                 // Disabled button submit
                 $submitBtn.attr('disabled', true);
@@ -192,21 +241,21 @@
                     // add some optional data
                     var { href, origin, pathname, search } = window.location;
                     var detail = {
-                        href : href,
-                        origin: origin,
-                        pathname: pathname,
-                        search : search
-                    };
-                    detail.meta = client.metaTagsDataObj();
+                            href : href,
+                            origin: origin,
+                            pathname: pathname,
+                            search : search
+                        },
+                        options = {
+                            type: 'post',
+                            data: {
+                                action: 'newTicket',
+                                ticket : ticket
+                            }
+                        };
+                    // detail.meta = client.metaTagsDataObj();
                     ticket.detail = detail;
 
-                    var options = {
-                        type: 'post',
-                        data: {
-                            action: 'newTicket',
-                            ticket : ticket
-                        }
-                    };
                     client.jsonTransPortData(options, function (err, res) {
                         var {success, data} = typeof res == "object" ? res : {};
                         if (!err && success && data) {
@@ -280,7 +329,10 @@
         var metaDetails = [];
         $('meta').each(function(i, meta) {
             var attributes = meta.attributes;
-            var atts = {};
+
+            console.log(JSON.stringify(meta));
+
+            /*var atts = {};
             for (var k = 0;k < attributes.length;k++) {
                 var metaAtts = attributes[k];
                 var $metaAtts = $(metaAtts);
@@ -291,8 +343,12 @@
                 }
             }
             atts = obj;
-            metaDetails.push(atts);
+
+            metaDetails.push(atts);*/
         });
+
+        return false;
+
         return metaDetails;
     }
 
