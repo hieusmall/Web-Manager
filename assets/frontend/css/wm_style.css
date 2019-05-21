@@ -3220,15 +3220,6 @@ input[type="button"].btn-block {
     }
 }
 
-
-.wm-popup .wm-popup-body {
-    overflow: hidden;
-    display: -webkit-flex; /* Safari */
-    -webkit-align-items: center; /* Safari 7.0+ */
-    display: flex;
-    align-items: center;
-}
-
 .wm-popup-content {
     /*background-position: center center;*/
     background-repeat: no-repeat;
@@ -3240,11 +3231,23 @@ input[type="button"].btn-block {
     background-position: top right;
 }
 
+
+@media (min-width: 992px) {
+    .wm-popup .wm-popup-body {
+        overflow: hidden;
+        display: -webkit-flex; /* Safari */
+        -webkit-align-items: center; /* Safari 7.0+ */
+        display: flex;
+        align-items: center;
+    }
+}
+
 @media (max-width: 991px) {
     .wm-popup-content {
         width: 100% !important;
         background-position: left center !important;
         min-height: unset;
+        background-image: none !important;
     }
 
     .wm-popup-content .wm-popup-body .wm-col-left,
