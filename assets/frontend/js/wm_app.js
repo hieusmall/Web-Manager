@@ -294,6 +294,8 @@
         if (hostname == "localhost") {
             if (url.search('admin.php') > 0) {
                 url = `${origin}${pathname.replace("admin.php", "admin-ajax.php")}`;
+            } else if (pathname.includes('beta.thammyvienngocdung.com')) {
+                url = `${origin}beta.thammyvienngocdung.com/wp-admin/admin-ajax.php`;
             } else {
                 url = `${origin}${pathname}wp-admin/admin-ajax.php`;
             }

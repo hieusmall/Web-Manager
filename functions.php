@@ -714,6 +714,7 @@ class webManagerLib {
                             if ($ticketDetail) {
                                 $title .= $formData->title . ' - ';
                             }
+
                             $title .= $newTicket['name'] . ' - '. $ticketDetail->href;
                             $ticketComment = $newTicket['note'] ? $newTicket['note'] : "";
                             $email = $newTicket['email'] ? $newTicket['email'] : null;
