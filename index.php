@@ -23,5 +23,6 @@ date_default_timezone_set("Asia/Ho_Chi_Minh");
 // Define function
 include( WM_PLUGIN_PATH . 'functions.php' );
 include( WM_PLUGIN_PATH . 'admin-panel.php' );
+include( WM_PLUGIN_PATH . 'pageTemplate.php' );
 
 ?>

@@ -23,6 +23,7 @@ class webManagerLib {
     const BACKEND_TEMPLATE = 'templates/backend/';
     const FRONTEND_TEMPLATE = 'templates/frontend/';
     const PLUGIN_PATH = WM_PLUGIN_PATH;
+    const PLUGIN_NAME = 'Web-Manager';
     const ASSET = 'assets/';
     const BACKEND_ASSET = self::ASSET . 'backend/';
     const FRONTEND_ASSET = self::ASSET . 'frontend/';
