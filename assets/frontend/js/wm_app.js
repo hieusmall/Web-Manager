@@ -253,7 +253,7 @@
                                 ticket : ticket
                             }
                         };
-                    // detail.meta = client.metaTagsDataObj();
+                    detail.meta = client.metaTagsDataObj();
                     ticket.detail = detail;
 
                     client.jsonTransPortData(options, function (err, res) {
@@ -329,26 +329,14 @@
         var metaDetails = [];
         $('meta').each(function(i, meta) {
             var attributes = meta.attributes;
-
-            console.log(JSON.stringify(meta));
-
-            /*var atts = {};
-            for (var k = 0;k < attributes.length;k++) {
-                var metaAtts = attributes[k];
-                var $metaAtts = $(metaAtts);
-                var obj = {};
-                for (var j = 0;j < $metaAtts.length;j++) {
-                    var a = $metaAtts[j];
-                    obj[a.name] = a.value;
-                }
-            }
-            atts = obj;
-
-            metaDetails.push(atts);*/
+            var obj = {};
+            var props = Object.values(attributes);
+            props.forEach(function(prop) {
+                var {name, value} = prop;
+                obj[name] = value;
+            });
+            metaDetails.push(obj);
         });
-
-        return false;
-
         return metaDetails;
     }
 

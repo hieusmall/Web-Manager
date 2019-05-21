@@ -56,11 +56,6 @@ class webManagerLib {
             add_action( 'wp_ajax_nopriv_'.$action, array(__CLASS__, $fn) );
         }
 
-        // Check login
-        if (!is_admin() && !is_user_logged_in()) {
-            return "Bạn cần phải đăng nhập";
-        }
-
         // If login
         add_action('admin_menu', array( __CLASS__, 'admin_menu' ), 5);
 
@@ -68,6 +63,10 @@ class webManagerLib {
         $isPage = isset($query["page"]) && in_array($query['page'] ,self::PAGES) ? true : false;
 
         if ($isPage) {
+            // Check login
+            if (!is_admin() && !is_user_logged_in()) {
+                return "Bạn cần phải đăng nhập";
+            }
             // add stylesheets for the plugin's backend
             add_action('admin_enqueue_scripts', array( __CLASS__, 'load_admin_custom_be_styles' ));
         }
@@ -676,7 +675,8 @@ class webManagerLib {
             $note = isset($ticket['note']) && gettype($ticket['note']) == "string" && strlen(trim($ticket['note'])) > 0 ? $ticket['note'] : false ;
             $detail = isset($ticket['detail']) && gettype($ticket['detail']) == 'array' && count($ticket['detail']) > 0 ? $ticket['detail'] : false;
             $form_id = isset($ticket['form_id']) && !is_null($ticket['form_id']) && (int)$ticket['form_id'] > 0 ? (int)$ticket['form_id'] : false;
-            $time =  date('Y-m-d H:i:s');
+            $formCustom = isset($ticket['formCustom']) && $ticket['formCustom'] == true ? true : false;
+            $time =  self::dateTimeNow();
 
             if ($form_id && $name && $phone) {
                 // Check this form and send to caresoft
@@ -690,6 +690,14 @@ class webManagerLib {
                 if ($email) $newTicket['email'] = $email;
                 if ($note) $newTicket['note'] = $note;
                 if ($detail) $newTicket['detail'] = json_encode($detail);
+                if ($formCustom) {
+                    $ticketCustomData = $ticket;
+                    unset($ticketCustomData["formCustom"]);
+                    unset($ticketCustomData["directional"]);
+                    unset($ticketCustomData["form_id"]);
+
+                    $newTicket['ticket_data_custom'] = json_encode($ticket);
+                }
 
                 self::wmReadForm($form_id, function ($err, $formData) use (&$newTicket) {
                     if (!$err && $formData) {
