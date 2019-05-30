@@ -196,7 +196,7 @@ class webManagerLib {
 
     public static function init() {
         // Setup storage
-        sefl::setUpStorage();
+        self::setUpStorage();
 
 
 //         add_action('wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_scripts' ));
