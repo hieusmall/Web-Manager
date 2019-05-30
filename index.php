@@ -10,7 +10,6 @@ Author URI:
 */
 
 
-define ( 'WM_VERSION', '1.0' );
 define ( 'WM_PLUGIN_PATH', trailingslashit ( plugin_dir_path ( __FILE__ ) ) );
 define ( 'WM_VERSION', '1.0' );
 define ( 'BACKEND_ASSETS', 'assets/backend');

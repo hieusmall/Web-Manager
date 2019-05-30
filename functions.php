@@ -14,6 +14,8 @@ add_action('init', array( 'webManagerLib', 'init' )); // Main Hook
 if ( class_exists('webManagerLib', false) ) return;
 
 class webManagerLib {
+    protected $query;
+
     const ID = 'webManager';
     const FORM_TABLE_NAME = 'wm_form';
     const POPUP_TABLE_NAME = 'wm_popup';
@@ -32,7 +34,8 @@ class webManagerLib {
     const VERSION = WM_VERSION;
 
     const PAGES = ["webManagerGeneral","webManagerForm","webManagerPopup","webManagerTicket"];
-    const ROUTES = ['newTicket', 'listForm' , 'newForm','readForm', 'updateForm', 'deleteForm',
+    const ROUTES = ['newTicket','listTicket', 'ticketsDataTable', 'readTicket', 'deleteTicket', 'updateTicket',
+        'listForm' , 'newForm','readForm', 'updateForm', 'deleteForm',
         'listPopup' , 'newPopup','readPopup', 'updatePopup', 'deletePopup'];
 
     const TO_CARESOFT_NOW_ON = 'on';
@@ -41,6 +44,12 @@ class webManagerLib {
         self::TO_CARESOFT_NOW_ON => 'on',
         self::TO_CARESOFT_NOW_OFF => 'off'
     );
+
+
+    public function __construct()
+    {
+        $this->query = self::queryToArray($_SERVER['QUERY_STRING']);
+    }
 
 
     public static function init() {
@@ -74,8 +83,6 @@ class webManagerLib {
     }
 
     public static function load_admin_custom_be_styles() {
-        wp_register_style('webManageBEStyles', plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'css/wm_backend.css', false, '0.0.1' );
-        wp_enqueue_style( 'webManageBEStyles' );
 
         /*
          * I recommend to add additional conditions just to not to load the scipts on each page
@@ -86,17 +93,41 @@ class webManagerLib {
             wp_enqueue_media();
         }
 
-        wp_enqueue_script('jquery');
-        wp_enqueue_script(self::ID, plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/wm_backend.js', array('jquery','jquery-ui-droppable','jquery-ui-draggable', 'jquery-ui-sortable'), self::VERSION, true);
+        wp_enqueue_style('WMBE_bootstrap_style', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/css/bootstrap.min.css', true, self::VERSION );
+        wp_enqueue_script('WMBE_popper', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/popper.min.js', array('jquery'), self::VERSION, true);
+        wp_enqueue_script('WMBE_bootstrap_scripts', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/js/bootstrap.min.js', array('jquery'), self::VERSION, true);
+
+        $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
+        $isFormPage = isset($query["currentPage"]) && in_array($query["currentPage"], ['formUpdate', 'formNew']) ? true : false;
+        $isListPage = !isset($query["currentPage"]) || in_array($query["currentPage"], ['listForm','listPopup','listTicket']) ? true : false;
+        if ($isFormPage) {
+            wp_enqueue_script('WMBE_formBuilder', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'form-builder.min.js', array('jquery'), self::VERSION, true);
+        }
+        if ($isListPage) {
+
+            wp_enqueue_style('WMBE_dataTables_style', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'dataTables/datatables.min.css', true, self::VERSION );
+            wp_enqueue_script('WMBE_dataTables_scripts', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'dataTables/datatables.min.js', array('jquery'), self::VERSION, true);
+            wp_enqueue_script('WMBE_dataTables_pdfmake', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'dataTables/pdfmake.min.js', array('jquery'), self::VERSION, true);
+            wp_enqueue_script('WMBE_dataTables_vfs_fonts', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'dataTables/vfs_fonts.js', array('jquery'), self::VERSION, true);
+
+
+            wp_enqueue_style('WMBE_bootstrapSelect_style', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrapSelect/css/bootstrap-select.min.css', true, self::VERSION );
+            wp_enqueue_script('WMBE_bootstrapSelect_scripts', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrapSelect/js/bootstrap-select.min.js', array('jquery'), self::VERSION, true);
+
+        }
+
+        wp_enqueue_style('webManageBEStyles', plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'css/wm_backend.css', false, self::VERSION );
+        wp_enqueue_script('webManageBEScripts', plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/wm_backend.js', array('jquery'), self::VERSION, true);
+
     }
 
     public static function enqueue_frontend_scripts() {
         wp_register_style('webManageFEStyles', plugin_dir_url(__FILE__) . self::FRONTEND_ASSET . 'css/wm_style.css', true, '0.0.1' );
         wp_enqueue_style( 'webManageFEStyles' );
         wp_enqueue_script('webManageFEScript');
-        wp_enqueue_script(self::ID . 'main_app', plugin_dir_url(__FILE__) . self::FRONTEND_ASSET . 'js/wm_app.js', array('jquery'), self::VERSION, true);
 //        wp_enqueue_script(self::ID . 'popper_app', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/popper.min.js', array('jquery'), self::VERSION, true);
         wp_enqueue_script(self::ID . 'bootstrap_app', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/js/bootstrap.min.js', array('jquery'), self::VERSION, true);
+        wp_enqueue_script(self::ID . 'main_app', plugin_dir_url(__FILE__) . self::FRONTEND_ASSET . 'js/wm_app.js', array('jquery'), self::VERSION, true);
     }
 
     public static function admin_menu() {
@@ -136,7 +167,16 @@ class webManagerLib {
         $result = $wpdb->get_results( "SELECT * FROM {$tableName}", OBJECT );
         $tickets = null;
         $err = false;
-        if ($result) $tickets = $result;
+        if ($result) {
+            $tickets = $result;
+            // convert string data
+            array_map(function ($obj) {
+                $obj->caresoft_ticket = !is_null($obj->caresoft_ticket) ? json_decode($obj->caresoft_ticket) : null;
+                $obj->detail = !is_null($obj->detail) ? json_decode($obj->detail) : null;
+                $obj->ticket_data_custom = !is_null($obj->ticket_data_custom) ? json_decode($obj->ticket_data_custom) : null;
+                return $obj;
+            }, $tickets);
+        }
         if (!$tickets) $err = "Cannot get this tickets";
         $callback($err, $tickets);
     }
@@ -217,6 +257,117 @@ class webManagerLib {
 
         return $table;
     }
+
+    public static function listTicketAPI() {
+        $tickets = [];
+        webManagerLib::wmListTickets(function ($err, $list) use (&$tickets) {
+            if (!$err && $list) {
+                wp_send_json_success($list);
+            } else {
+                wp_send_json_error("Cannot find list ticket", 400);
+            }
+        });
+        die();
+    }
+
+    public static function ticketsDataTableAPI() {
+        header("Content-Type: application/json");
+        $tickets = [];
+        $request = $_GET;
+
+        // Check some data data table
+        $length = isset($request['length']) && (int)$request['length'] > 0 ? (int)$request['length'] : 30;
+        $order = isset($request['order']) && is_array($request['order']) && count($request['order']) > 0 ? $request['order'] : false;
+        $draw = isset($request['draw']) && !is_null($request['draw']) ? intval($request['draw']) : 1;
+        $columns = isset($request['columns']) && is_array($request["columns"]) ? $request['columns'] : [];
+
+        // Get filter values
+        $filterByFormIds = isset($request['form_id']) && !is_null($request['form_id']) && is_array($request['form_id']) && count($request['form_id']) > 0 ? $request['form_id'] : false;
+        $hasCareSoftTicket = isset($request['caresoft_ticket']) && !is_null($request['caresoft_ticket']) ? $request['caresoft_ticket'] : false;
+        $isFilter = $filterByFormIds || $hasCareSoftTicket ? true : false;
+
+        global $wpdb;
+        $tableTicket = $wpdb->prefix . self::TICKET_TABLE_NAME;
+        $sql = "SELECT * FROM {$tableTicket} ";
+        $recordsTotal = $wpdb->get_results( "SELECT COUNT(*) FROM {$tableTicket} ", OBJECT );
+        $listTickets = array();
+        $filters = array();
+        $data = false;
+
+        // If has filter action
+        if ($isFilter) {
+            $sql .= "WHERE ";
+
+            // If request filter by form id
+            if ($filterByFormIds) {
+                $ids = join("','", $filterByFormIds);
+                $sql .= "form_id IN ('$ids') ";
+            }
+            if ($hasCareSoftTicket && $filterByFormIds) {
+                $sql .= 'AND ';
+            }
+            if ($hasCareSoftTicket == 'yes') {
+                $sql .= "caresoft_ticket IS NOT NULL ";
+            }
+            if ($hasCareSoftTicket == 'no') {
+                $sql .= "caresoft_ticket IS NULL ";
+            }
+
+            $filters = $wpdb->get_results( $sql, OBJECT );
+            $data = (array)$filters;
+        } else {
+            $listTickets = $wpdb->get_results( $sql, OBJECT );
+            $data = (array)$listTickets;
+        }
+
+        // json response data
+        $json_data = array(
+            "draw" => $draw,
+            "recordsTotal" => $recordsTotal,
+            "recordsFiltered" => count($filters),
+            "data" => []
+        );
+
+        /*if ($order) {
+            foreach ($order as $arr) {
+                $key = $arr["column"];
+                $columnOrder = $columns[$key];
+                $columnName = $columnOrder["name"];
+                $orderType = $arr['dir'];
+            }
+            $sql .= " ORDER BY {$columnName} {$orderType}";
+        }*/
+
+
+        // Check this data is exist
+        if ($data) {
+            // convert string data to Object
+            $data = array_map(function ($obj) {
+                $detail = !is_null($obj->detail) ? json_decode($obj->detail) : null;
+                $form_id = $obj->form_id ? $obj->form_id : false;
+                $ticket_data = !is_null($obj->ticket_data) ? json_decode($obj->ticket_data) : null;
+                $ticket_data_custom = !is_null($obj->ticket_data_custom) ? json_decode($obj->ticket_data_custom) : null;
+
+                $form = null;
+                self::wmReadForm($form_id, function ($err , $formData) use (&$form) {
+                    if (!$err && $formData)
+                        $form = $formData;
+                });
+
+                $obj->ticket_id = intval($obj->ticket_id);
+                $obj->form = $form;
+                $obj->detail = $detail;
+                $obj->ticket_data = $ticket_data;
+                $obj->ticket_data_custom = $ticket_data_custom;
+                return $obj;
+            }, $data);
+            $json_data["data"] = $data;
+        }
+
+        wp_send_json($json_data);
+        die();
+    }
+
 
 
     public static function getFETemplate($arr,$template) {
@@ -483,7 +634,10 @@ class webManagerLib {
             $tableName =  $wpdb->prefix . self::FORM_TABLE_NAME;
             $result = $wpdb->get_results( "SELECT * FROM {$tableName} WHERE form_id = {$form_id} LIMIT 1", OBJECT );
             $form = null;
-            if ($result) $form = $result[0];
+            if ($result) {
+                $form = $result[0];
+                $form->form_custom_template = isset($form->form_custom_template) && !is_null($form->form_custom_template) ? json_decode($form->form_custom_template) : null;
+            }
             if (!$form) {
                 $callback("Cannot get this form", null);
             } else {
@@ -557,7 +711,6 @@ class webManagerLib {
         } else {
             self::wmReadForm($form_id, function ($err, $form) {
                 if (!$err && $form) {
-                    $form->form_custom_template = !is_null($form->form_custom_template) ? json_decode($form->form_custom_template) : null;
                     wp_send_json_success($form);
                 } else {
                     wp_send_json_error('Cannot find this form', 405);
@@ -664,6 +817,49 @@ class webManagerLib {
 
 
 
+    public static function wmReadTicket($ticket_id, $callback) {
+        $ticket_id = isset($ticket_id) && !is_null($ticket_id) && (int)$ticket_id > 0 ? $ticket_id : false;
+        if (!$ticket_id) {
+            $callback("Mising some required field");
+        } else {
+            global $wpdb;
+            $tableName =  $wpdb->prefix . self::TICKET_TABLE_NAME;
+            $result = $wpdb->get_results( "SELECT * FROM {$tableName} WHERE ticket_id = {$ticket_id} LIMIT 1", OBJECT );
+            $ticket = null;
+            if ($result) {
+                $ticket = $result[0];
+
+                $ticket->detail = isset($ticket->detail) && !is_null($ticket->detail) ? json_decode($ticket->detail) : null;
+                $ticket->caresoft_ticket = isset($ticket->caresoft_ticket) && !is_null($ticket->caresoft_ticket) ? json_decode($ticket->caresoft_ticket) : null;
+                $ticket->ticket_data_custom = isset($ticket->ticket_data_custom) && !is_null($ticket->ticket_data_custom) ? json_decode($ticket->ticket_data_custom) : null;
+                $ticket->ticket_data = isset($ticket->ticket_data) && !is_null($ticket->ticket_data) ? json_decode($ticket->ticket_data) : null;
+
+            }
+            if (!$ticket) {
+                $callback("Cannot get this ticket", null);
+            } else {
+                $callback(false, $ticket);
+            }
+        }
+    }
+
+    public static function readTicketAPI() {
+        $method = strtolower($_SERVER['REQUEST_METHOD']) == 'get' ? $_SERVER['REQUEST_METHOD'] : false;
+        if ($method) {
+            $ticket_id = isset($_GET['ticket_id']) && (int)$_GET['ticket_id'] > 0 ? (int)$_GET['ticket_id'] : false;
+            self::wmReadTicket($ticket_id, function ($err, $ticket) {
+                if (!$err && $ticket) {
+                    wp_send_json_success($ticket);
+                } else {
+                    wp_send_json_error($err, 403);
+                }
+            });
+        } else {
+            wp_send_json_error('Unknown this method', 401);
+        }
+        die();
+    }
+
     public static function newTicketAPI() {
         //do bên js để dạng json nên giá trị trả về dùng phải encode
         $ticket = isset($_REQUEST['ticket']) && gettype($_REQUEST['ticket']) == 'array' && count($_REQUEST['ticket']) > 0 ? $_REQUEST['ticket'] : false;
@@ -679,6 +875,10 @@ class webManagerLib {
             $formCustom = isset($ticket['formCustom']) && $ticket['formCustom'] == true ? true : false;
             $time =  self::dateTimeNow();
 
+
+            /**
+             * With Ticket data
+             */
             if ($form_id && $name && $phone) {
                 // Check this form and send to caresoft
                 $newTicket = array(
@@ -711,19 +911,28 @@ class webManagerLib {
                         if ($checkToCareSoftNow) {
                             $ticketDetail = isset($newTicket['detail']) && !is_null($newTicket['detail']) ? json_decode($newTicket['detail']) : false;
                             $title = "";
-                            if ($ticketDetail) {
-                                $title .= $formData->title . ' - ';
-                            }
-
-                            $title .= $newTicket['name'] . ' - '. $ticketDetail->href;
-                            $ticketComment = $newTicket['note'] ? $newTicket['note'] : "";
+                            $title .= $formData->title . ' - ' . $newTicket['name'];
+                            $ticketComment = "";
                             $email = $newTicket['email'] ? $newTicket['email'] : null;
                             $name = $newTicket['name'];
                             $phone = $newTicket['phone'];
                             $caresoft_id = isset($formData->caresoft_id) ? $formData->caresoft_id : null;
+
+                            // Optimize api title and comment
+                            $ticketComment .= "<br> <b style='color:firebrick'>Chi Tiết Đăng Kí</b>";
+                            $ticketComment .= '<br> Link bài viết : '. $ticketDetail->href;
+                            $postTitle = $ticketDetail && isset($ticketDetail->postTitle) && !is_null($ticketDetail->postTitle) ? $ticketDetail->postTitle : false;
+                            if ($postTitle) {
+                                $title .= ' - ' . $postTitle;
+                                $ticketComment .= '<br> Tiêu Đề Page : ' . $postTitle;
+                            }
+                            $note = $newTicket['note'] ? $newTicket['note'] : false;
+                            if ($note) {
+                                $ticketComment .= "<br> Lời nhắn của khách hàng";
+                            }
+
                             $options = array($title, $ticketComment, $email, $phone, $name, $caresoft_id);
                             $ticketCareSoft = self::sendTicketToCareSoft($options);
-
                             // If can't send to caresoft
                             if (!$ticketCareSoft) {
                                 // if not find ticketCarsoft
@@ -880,7 +1089,7 @@ class webManagerLib {
 
 
     public static function getWMFormShortCode($att, $content = null) {
-        $form_id = isset($att['form_id']) && !is_null($att['form_id']) && (int)$att['form_id'] > 0 ? $att['form_id'] : false;
+        $form_id = isset($att['form_id']) && !is_null($att['form_id']) && (int)$att['form_id'] > 0 ? (int)$att['form_id'] : false;
         if (!$form_id) {
             $formHtml = "Oops";
         } else {
@@ -1031,6 +1240,20 @@ class webManagerLib {
         $a = self::vn_str_filter($str);
         $x = str_replace(" ","_", $a);
         return $x;
+    }
+
+    public static function findObjectInArray($search = "",$arr = array()) {
+        foreach ($arr as $key => $val) {
+            $val = (array)$val;
+            $hasSearch = array_key_exists($search, $val) ? true : false;
+            if ($hasSearch) {
+                $obj = (object)$val;
+                return $obj;
+            } else {
+                continue;
+            }
+        }
+        return null;
     }
 
     /*

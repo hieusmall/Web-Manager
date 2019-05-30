@@ -115,9 +115,3 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
         </div>
     <?php }
 ?>
-
-
-<script src="//formbuilder.online/assets/js/form-builder.min.js"></script>
-<script type="text/javascript">
-
-</script>
