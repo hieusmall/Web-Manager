@@ -2924,7 +2924,6 @@ input[type="button"].btn-block {
     }
 }
 
-
 .clearfix::after {
     display: block;
     clear: both;
@@ -2937,4 +2936,12 @@ input[type="button"].btn-block {
 
 .bg-brand-golden {
     background-color: #dcaf26;
+}
+
+.text-brand-blue {
+    color: #132469;
+}
+
+.text-brand-golden {
+    color: #132469;
 }

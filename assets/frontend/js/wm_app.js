@@ -93,7 +93,7 @@
                         form_custom_template.forEach(function (inputObj) {
                             var {className, label, values, maxlength, name, placeholder, required, subtype, type} = inputObj,
                                 $label = $(`<label>${label}</label>`);
-                            inputObj.class = className;
+                            inputObj.class = className ? className : "";
                             inputObj.type = subtype ? subtype : type;
 
                             delete inputObj.subtype;
@@ -114,7 +114,7 @@
                             } else if(['submit','button'].includes(type)) {
                                 elem = `<button>${label}</button>`;
                                 $field = $(elem).attr(attrs);
-                                $formGroup = $formGroup.append($field);
+                                $formGroup.append($field);
                             } else if (['radio-group', 'radio'].includes(type)) {
                                 var radios = '';
                                 values = typeof values == 'object' && values instanceof Array ? values : [];
@@ -157,7 +157,8 @@
                                 $field.append($datalist.html(options));
                                 $formGroup.append($field);
                             } else if (['paragraph'].includes(type)) {
-                                console.log(attrs);
+                                $field = $(`<p>${label}</p>`);
+                                $formGroup.attr('class',"").append($field);
                             }
 
 
@@ -239,13 +240,22 @@
 
                 function transPortTicket(ticket) {
                     // add some optional data
-                    var { href, origin, pathname, search } = window.location;
-                    var detail = {
-                        href : href,
-                        origin: origin,
-                        pathname: pathname,
-                        search : search
-                    },
+                    var { href, origin, pathname, search } = window.location,
+                        meta = client.metaTagsDataObj(),
+                        postTitleMeta = meta.find(function (obj) {
+                            var check = false,
+                                xValue = Object.values(obj);
+                            if (xValue.includes("og:title") || xValue.includes("twitter:title")) {
+                                check = true;
+                            }
+                            return check;
+                        }),
+                        detail = {
+                            href : href,
+                            origin: origin,
+                            pathname: pathname,
+                            search : search,
+                        },
                         options = {
                             type: 'post',
                             data: {
@@ -253,7 +263,8 @@
                                 ticket : ticket
                             }
                         };
-                    detail.meta = client.metaTagsDataObj();
+                    detail.meta = meta;
+                    detail.postTitle = typeof postTitleMeta == "object"  ? postTitleMeta.content : undefined;
                     ticket.detail = detail;
 
                     client.jsonTransPortData(options, function (err, res) {
@@ -295,7 +306,7 @@
             if (url.search('admin.php') > 0) {
                 url = `${origin}${pathname.replace("admin.php", "admin-ajax.php")}`;
             } else if (pathname.includes('beta.thammyvienngocdung.com')) {
-                url = `${origin}beta.thammyvienngocdung.com/wp-admin/admin-ajax.php`;
+                url = `${origin}/ngocdung/beta.thammyvienngocdung.com/wp-admin/admin-ajax.php`;
             } else {
                 url = `${origin}${pathname}wp-admin/admin-ajax.php`;
             }
