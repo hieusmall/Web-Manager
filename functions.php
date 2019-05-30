@@ -9,7 +9,6 @@
 $method = $_SERVER['REQUEST_METHOD'];
 $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
 
-
 add_action('init', array( 'webManagerLib', 'init' )); // Main Hook
 if ( class_exists('webManagerLib', false) ) return;
 
