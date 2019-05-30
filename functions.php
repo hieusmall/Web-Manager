@@ -188,7 +188,7 @@ class webManagerLib {
         $storage = array($wm_ticket_table, $wm_form_table, $wm_popup_table, $wm_cs_angent_table);
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
         foreach ($storage as $sql) {
-            $done = dbDelta( $wm_form_table );
+            $done = dbDelta( $sql );
         }
 
     }
