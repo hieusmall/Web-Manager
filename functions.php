@@ -52,7 +52,153 @@ class webManagerLib {
     }
 
 
+    public static function setUpStorage() {
+        global $wpdb;
+        $prefix = $wpdb->prefix;
+        $wm_ticket_table = 'SET NAMES utf8mb4;
+                            SET FOREIGN_KEY_CHECKS = 0;
+                            CREATE TABLE IF NOT EXISTS `'.$prefix.'wm_ticket`  (
+                              `ticket_id` bigint(20) NOT NULL AUTO_INCREMENT,
+                              `name` varchar(250) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+                              `phone` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+                              `note` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+                              `email` varchar(250) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+                              `detail` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+                              `created_at` datetime(0) NULL DEFAULT NULL,
+                              `updated_at` datetime(0) NULL DEFAULT NULL,
+                              `form_id` bigint(20) UNSIGNED NULL DEFAULT NULL,
+                              `caresoft_ticket` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+                              `branchs` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+                              `ticket_data_custom` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+                              `ticket_data` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+                              PRIMARY KEY (`ticket_id`) USING BTREE
+                            ) ENGINE = InnoDB AUTO_INCREMENT = 45 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Compact;
+                            SET FOREIGN_KEY_CHECKS = 1;';
+
+        $wm_form_table = "SET NAMES utf8mb4;
+                        SET FOREIGN_KEY_CHECKS = 0;
+                        CREATE TABLE IF NOT EXISTS `".$prefix."wm_form`  (
+                          `form_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'ID form để phân loại',
+                          `title` varchar(250) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'Tiêu đề của form',
+                          `to_caresoft_now` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'Sau khi submit đưa lên caresoft luôn hoặc không',
+                          `form_custom_template` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+                          `directional` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'Url chuyển hướng ',
+                          `created_at` datetime(0) NULL DEFAULT NULL COMMENT 'Ngày tạo',
+                          `updated_at` datetime(0) NULL DEFAULT NULL COMMENT 'Ngày cập nhật',
+                          `caresoft_id` bigint(10) UNSIGNED NULL DEFAULT NULL COMMENT 'ID phân loại nguồn lead Caresoft',
+                          `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+                          PRIMARY KEY (`form_id`) USING BTREE
+                        ) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Compact;
+                        SET FOREIGN_KEY_CHECKS = 1;";
+
+        $wm_popup_table = "SET NAMES utf8mb4;
+                        SET FOREIGN_KEY_CHECKS = 0;
+                        CREATE TABLE IF NOT EXISTS `".$prefix."wm_popup`  (
+                          `popup_id` bigint(20) NOT NULL AUTO_INCREMENT,
+                          `title` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+                          `bg_image_id` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+                          `form_id` bigint(20) UNSIGNED NULL DEFAULT NULL,
+                          `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+                          `direction_background` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+                          `delay_show_time` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+                          `created_at` datetime(0) NULL DEFAULT NULL,
+                          `updated_at` datetime(0) NULL DEFAULT NULL,
+                          PRIMARY KEY (`popup_id`) USING BTREE
+                        ) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Compact;
+                        SET FOREIGN_KEY_CHECKS = 1;";
+
+        $wm_cs_angent_table = "SET NAMES utf8mb4;
+                            SET FOREIGN_KEY_CHECKS = 0;
+                            DROP TABLE IF EXISTS `".$prefix."wm_cs_agent`;
+                            CREATE TABLE `".$prefix."wm_cs_agent`  (
+                              `id` bigint(20) UNSIGNED NULL DEFAULT NULL,
+                              `email` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+                              `phone_no` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+                              `agent_id` int(30) UNSIGNED NULL DEFAULT NULL,
+                              `group_id` int(10) UNSIGNED NULL DEFAULT NULL,
+                              `group_name` varchar(250) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+                              `role_id` tinyint(10) NULL DEFAULT NULL,
+                              `created_at` datetime(0) NULL DEFAULT NULL,
+                              `updated_at` datetime(0) NULL DEFAULT NULL
+                            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Compact;
+                            
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (15413222, '0', '0988750275', 3720, 7734, 'SEO', 1, '2017-11-08 10:05:07', '2019-05-13 15:31:56');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (15595552, '0', '0905211562', 3716, 7730, 'Tư vấn', 2, '2017-11-13 14:23:58', '2019-05-15 08:04:51');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (16185586, '0', '0778787094', 3717, 7730, 'Tư vấn', 2, '2017-11-29 15:26:10', '2019-05-09 12:41:07');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (16185618, '0', '0938033342', 3718, 7730, 'Tư vấn', 2, '2017-11-29 15:26:39', '2019-05-12 08:06:45');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (16185632, '0', '0903106166', 3719, 7730, 'Tư vấn', 2, '2017-11-29 15:26:58', '2019-05-16 14:40:55');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (16185650, '0', '0393789224', 3787, 7730, 'Tư vấn', 2, '2017-11-29 15:27:20', '2019-02-27 11:00:08');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (16185662, '0', '0913808913', 3788, 7730, 'Tư vấn', 2, '2017-11-29 15:27:43', '2019-05-08 10:42:25');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (16644168, '0', NULL, 3789, 7730, 'Tư vấn', 2, '2017-12-12 19:40:55', '2019-04-25 14:35:35');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (16650858, '0', '0902491623', 3790, 7730, 'Tư vấn', 2, '2017-12-13 08:12:14', '2019-05-12 07:52:41');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (16650900, '0', '0387530124', 3791, 7730, 'Tư vấn', 2, '2017-12-13 08:14:20', '2019-05-08 10:41:37');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (19193307, '0', '0906993790', 5476, 8445, 'OFFLINE', 2, '2018-01-25 09:24:19', '2019-02-23 14:33:55');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (19831065, '0', '0981182410', 3794, 7732, 'CSKH', 2, '2018-02-03 17:00:12', '2019-05-15 17:25:53');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (19833102, '0', '0335136839', 3795, 7732, 'CSKH', 2, '2018-02-03 17:37:10', '2019-04-29 08:20:20');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (19833687, '0', '0932717322', 3797, 7732, 'CSKH', 2, '2018-02-03 17:48:26', '2019-04-25 14:39:09');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (19834329, '0', '02866720777', 3796, 7732, 'CSKH', 2, '2018-02-03 18:03:59', '2019-04-28 09:05:16');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (19834410, '0', '02866720666', 3798, 7732, 'CSKH', 2, '2018-02-03 18:05:54', '2019-05-14 10:54:50');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (21621747, '0', '0988016901', 6327, 10425, 'CRM', 2, '2018-03-08 11:04:05', '2019-03-25 15:40:03');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (22109397, '0', '0966032703', 5477, 8445, 'OFFLINE', 2, '2018-03-15 15:22:42', '2019-04-25 14:45:57');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (22480929, '0', '0938837379', 3799, 7732, 'CSKH', 2, '2018-03-21 11:25:42', '2019-01-24 12:37:17');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (23943516, '0', '0903870721', 4641, 7732, 'CSKH', 2, '2018-03-29 17:13:46', '2019-05-16 11:14:33');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (24881607, '0', '02822001001', 3793, 7732, 'CSKH', 2, '2018-04-13 15:37:50', '2019-04-23 08:52:59');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (24882753, '0', '02822003003', 4643, 7732, 'CSKH', 2, '2018-04-13 15:49:17', '2019-04-25 11:32:12');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (24883884, '0', '02822005005', 4644, 7732, 'CSKH', 2, '2018-04-13 16:01:45', '2019-04-26 08:30:32');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (26273483, '0', '0984352069', 4645, 7730, 'Tư vấn', 2, '2018-05-04 15:08:39', '2019-04-28 13:03:13');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (27101339, '0', '0974992827', 6326, 10425, 'CRM', 2, '2018-05-16 14:32:04', '2019-03-20 15:19:12');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (27237800, '0', '0963233642', 4647, 7730, 'Tư vấn', 2, '2018-05-18 15:50:20', '2019-04-25 14:30:46');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (27932594, '0', '0703912909', 4864, 7730, 'Tư vấn', 2, '2018-05-26 13:47:00', '2019-03-29 09:48:01');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (27933860, '0', '0932779550', 4865, 7730, 'Tư vấn', 2, '2018-05-26 14:06:40', '2019-04-16 16:17:51');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (29128598, '0', '0966073907', 5469, 8445, 'OFFLINE', 2, '2018-06-13 11:14:06', '2018-12-27 14:55:35');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (29232044, '0', '0373070711', 4866, 7730, 'Tư vấn', 2, '2018-06-14 16:04:16', '2019-04-25 14:29:52');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (30119395, '0', '0283868006', 4868, 7732, 'CSKH', 2, '2018-06-26 15:16:41', '2019-05-14 11:02:44');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (31761056, '0', '0902630789', 4870, 7730, 'Tư vấn', 2, '2018-07-20 09:51:54', '2019-05-15 10:58:26');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (32295564, '0', '0385506131', 1063, 7730, 'Tư vấn', 2, '2018-07-24 17:07:16', '2019-03-20 08:16:48');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (33254085, '0', '0395447396', 1065, 7716, 'Default Group', 2, '2018-08-04 10:58:00', '2019-05-15 12:06:28');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (35505124, '0', '0936241032', 5470, 7716, 'Default Group', 2, '2018-08-23 11:30:28', '2019-05-16 19:13:21');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (35509019, '0', '0908912751', 5471, 7716, 'Default Group', 2, '2018-08-23 11:54:52', '2019-05-16 16:27:38');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (35559324, '0', '0906373634', 5478, 8445, 'OFFLINE', 2, '2018-08-23 17:04:51', '2019-03-16 14:29:42');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (36262305, '0', '0965375050', 5472, 7716, 'Default Group', 2, '2018-08-29 08:27:23', '2019-05-16 08:14:40');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (37097574, '0', '0946303776', 5474, 7716, 'Default Group', 2, '2018-09-08 08:23:44', '2019-05-17 08:17:59');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (37490466, '0', '0724749654', 5473, 7716, 'Default Group', 2, '2018-09-12 10:53:12', '2019-05-17 08:11:40');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (41534947, '0', '0932726267', 5479, 8445, 'OFFLINE', 2, '2018-10-25 10:02:08', '2019-05-10 15:58:55');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (41535217, '0', '0909692632', 6321, 8445, 'OFFLINE', 2, '2018-10-25 10:04:11', '2019-01-09 08:31:49');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (44548172, '0', '0979036446', 6322, 7732, 'CSKH', 2, '2018-11-22 16:00:18', '2019-05-04 15:09:54');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (58939375, '0', '0909123456', 4646, 7732, 'CSKH', 2, '2019-03-20 14:01:31', '2019-04-25 14:34:26');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (58968877, '0', '0909321654', 6323, 8445, 'OFFLINE', 2, '2019-03-20 14:26:09', '2019-03-25 14:54:08');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (58976149, '0', '0979013101', 6324, 10425, 'CRM', 2, '2019-03-20 15:08:06', '2019-05-07 15:39:43');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (58976491, '0', '0902969623', 6329, 10425, 'CRM', 2, '2019-03-20 15:09:56', '2019-03-20 15:09:56');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (58976632, '0', '0989017801', 6325, 10425, 'CRM', 2, '2019-03-20 15:10:51', '2019-03-20 15:10:51');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (67681036, '0', '0947772037', 6328, 7732, 'CSKH', 2, '2019-04-22 14:44:15', '2019-05-04 10:54:25');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (67681348, '0', '0972568261', 6330, 7732, 'CSKH', 2, '2019-04-22 14:45:53', '2019-05-15 15:28:49');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (67681753, '0', '0336564024', 7707, 7732, 'CSKH', 2, '2019-04-22 14:48:03', '2019-05-15 09:36:11');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (67682638, '0', '0852887177', 7708, 7732, 'CSKH', 2, '2019-04-22 14:52:48', '2019-05-10 16:06:52');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (67682731, '0', '0933219295', 7709, 7732, 'CSKH', 2, '2019-04-22 14:53:14', '2019-05-16 17:59:19');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (15594858, '0', '0911240024', 3715, 7730, 'Tư vấn', 4, '2017-11-13 14:20:13', '2019-05-17 08:22:27');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (16185696, '0', '0938768379', 3792, 7732, 'CSKH', 4, '2017-11-29 15:28:22', '2019-05-15 11:05:37');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (27745625, '0', '0902656518', 5475, 8445, 'OFFLINE', 4, '2018-05-24 08:46:13', '2018-09-21 09:49:24');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (27921668, '0', '0906313635', 4648, 8445, 'OFFLINE', 4, '2018-05-26 10:49:36', '2019-01-21 16:29:27');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (33812661, '0', '0777800554', 1066, 8445, 'OFFLINE', 4, '2018-08-10 09:10:40', '2018-11-23 13:59:57');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (58150540, '0', '0966017901', 4642, 10425, 'CRM', 4, '2019-03-14 09:39:16', '2019-05-15 15:26:12');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (58151458, '0', '0901822969', 1064, 10425, 'CRM', 4, '2019-03-14 09:45:09', '2019-03-19 09:44:02');
+                            INSERT INTO `".$prefix."wm_cs_agent` VALUES (31720865, '0', '0704666306', 4867, 7716, 'Default Group', 11, '2018-07-19 16:10:11', '2019-03-26 16:14:52');
+                            SET FOREIGN_KEY_CHECKS = 1;";
+
+        $storage = array($wm_ticket_table, $wm_form_table, $wm_popup_table, $wm_cs_angent_table);
+        require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+        foreach ($storage as $sql) {
+            $done = dbDelta( $wm_form_table );
+        }
+
+    }
+
+
     public static function init() {
+        // Setup storage
+        sefl::setUpStorage();
+
+
 //         add_action('wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_scripts' ));
         add_action('wp_footer', array(__CLASS__, 'enqueue_frontend_scripts'));
 
