@@ -16,6 +16,13 @@
     box-sizing: border-box;
 }
 
+.wmfullLoading {
+    width: 100%;
+    display: block;
+    background: white;
+    padding: 3% 10%;
+}
+
 .wm-bg-1 {
     background-image: url("../img/bg1.png");
     background-position: center center;
@@ -24,7 +31,7 @@
 }
 
 .wmAdminWrap {
-
+    font-size: 14px;
 }
 
 .makeMagicContactForm {
@@ -45,4 +52,36 @@
 
 .form-action-group {
     display: inline-block;
+}
+
+div.dataTables_wrapper div.dataTables_filter {
+    display: inline-block;
+    float: right;
+}
+
+table.dataTable tbody tr.selected {
+    background-color: #1990f65c;
+}
+
+table.dataTable tbody tr.selected a {
+    color: #132469;
+}
+
+table.dataTable thead th.manage-column {
+    vertical-align: middle;
+    padding: 1%;
+}
+
+table.dataTable thead th.check-column input,
+table.dataTable tbody td.check-column input {
+    margin: 0;
+}
+
+div.dataTables_wrapper div.dataTables_length select {
+    width: 60px;
+}
+
+/** Css detail ticket popup template ***/
+.wmTicketDetailPopup .list-group-item {
+    line-height: 20px;
 }

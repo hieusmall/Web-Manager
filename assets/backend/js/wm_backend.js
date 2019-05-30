@@ -2,6 +2,7 @@
     var wmBags = {};
 
     wmBags.pluginPageUrl = $("#pluginPageUrl").data("pluginPageUrl");
+    wmBags.adminAjaxUrl = $("#adminAjaxUrl").data("admixAjaxUrl");
 
     wmBags.acceptPage = ['formList', 'formNew', 'formUpdate',
         'popupList','popupNew','popupUpdate',
@@ -64,7 +65,312 @@
     }
 
     wmBags.ticketListPage = () => {
-        alert(123);
+        var ticketLib = {},
+            $detailLeadPopup = $('#detailLeadPopup');
+        ticketLib.whenTicketTableDraw = (table) => {
+            var $table = $(table),
+                $checkall = $table.find('thead th.column-cb.check-column input'),
+                $checkOneItems = $table.find('tbody td.check-column input');
+
+            // Setup check all for this table
+            $checkall.off('click');
+            $checkall.on('click', function (e) {
+                var isCheckAll = $checkall.prop('checked');
+                $checkOneItems.each(function (i, input) {
+                    var $check = $(input),
+                        {checked} = input,
+                        $tr = $check.closest('tr');
+
+                    if (isCheckAll) {
+                        if (!checked && !$tr.hasClass('selected')) {
+                            $check.click();
+                        }
+                    } else {
+                        $check.click();
+                    }
+                });
+            })
+
+            // Setup tooltips for this table
+            $ticketTable.find('[data-toggle="tooltip"]').tooltip({ boundary: 'window' });
+
+            // Setup view ticket detail
+            var $showButtons = $table.find('.viewDetailTicket');
+            $showButtons.each(function (i, button) {
+                ticketLib.viewDetailTicket(button);
+            });
+
+            return false;
+        };
+        ticketLib.viewDetailTicket = (showButton) => {
+            var $showButton = $(showButton);
+            $showButton.off('click');
+            $showButton.on('click', function (e) {
+                e.preventDefault(e);
+                var $modalSnapShot = $detailLeadPopup.clone().attr("id",""),
+                    $button = $(this),
+                    $tr = $button.closest("tr"),
+                    rowData = $ticketDTable.row($tr).data(),
+                    {name, phone, email,note, created_at, detail} = typeof rowData == "object" ? rowData : {},
+                    {href, postTitle} = detail;
+
+                $modalSnapShot.on('show.bs.modal', function () {
+                    $modalSnapShot.find('.ticketName').text(name);
+                    $modalSnapShot.find('.ticketPhone').text(phone);
+                    $modalSnapShot.find('.ticketEmail').text(email);
+                    $modalSnapShot.find('.ticketNote').text(note);
+                    $modalSnapShot.find('.ticketCreated').text(created_at);
+                    $modalSnapShot.find('.ticketHrefUrl').text(href);
+                    $modalSnapShot.find('.ticketPostTitle').text(postTitle);
+                })
+
+                $modalSnapShot.on('hidden.bs.modal', function () {
+                    $(this).remove();
+                })
+
+                $modalSnapShot.modal('show');
+            });
+        };
+        ticketLib.ticketsFilter = (table) => {
+            // Setup filter
+            var $table = $(table),
+                $filterWrapper = $cardLeadTables.find("#filters_ticket_wrapper");
+
+            // Filter by form
+            var $ticketFilterByForm = $filterWrapper.find("#ticketFilterByForm"),
+                // formFiterItems = `<option value="">---- Tất Cả Form ----</option>`,
+                formFiterItems = ``;
+            wmBags.jsonTransPortData({type: 'get',data: {action: "listForm"}}, function (err, res) {
+                var {success, data} = typeof res == "object" ? res : {};
+                if (!err && success && data) {
+                    data.forEach(function (formItem) {
+                        var {form_id, name, title} = formItem;
+                        formFiterItems += `<option value="${form_id}">${title} - ${name}</option>`;
+                    });
+                    $ticketFilterByForm.html(formFiterItems);
+                    $ticketFilterByForm.selectpicker({
+                        selectedTextFormat: 'count > 3',
+                        showTick: true,
+                        style: 'btn-light',
+                        selectAllText: "<span class='text-success'>Tất Cả</span>",
+                        deselectAllText: "<span class='text-danger'>Hủy Chọn</span>",
+                        noneSelectedText: "Tất Cả",
+                        showTick: true,
+                        actionsBox :true
+                    });
+                    $ticketFilterByForm.on('change',function (e) {
+                        e.preventDefault();
+                        $ticketDTable.draw();
+                    });
+                } else {
+                    console.log("Can't load form filter");
+                }
+            });
+
+            // Fiter by Caresoft Status
+            var careSoftFiterItems = ``,
+                $ticketFilterByCareSoft = $filterWrapper.find("#ticketFilterByCareSoftStt");
+            careSoftFiterItems += `<option value="">--Care Soft--</option>
+                                    <option value="yes">Đã Tạo Ticket</option>
+                                    <option value="no">Chưa Có Thông Tin</option>`;
+            $ticketFilterByCareSoft.html(careSoftFiterItems);
+            $ticketFilterByCareSoft.selectpicker({
+                selectedTextFormat: 'count > 3',
+                showTick: true,
+                style: 'btn-light',
+                selectAllText: "<span class='text-success'>Tất Cả</span>",
+                deselectAllText: "<span class='text-danger'>Hủy Chọn</span>",
+                noneSelectedText: "Tất Cả",
+                // showTick: true,
+                // actionsBox :true
+            });
+            $ticketFilterByCareSoft.on('change',function (e) {
+                e.preventDefault();
+                $ticketDTable.draw();
+            });
+        }
+
+        // Ticket data table
+        var $ticketTable = $('#ticketDTable'),
+            $cardLeadTables = $('.cardLeadTables'),
+            urlSourceData =  `${wmBags.adminAjaxUrl}`,
+            $ticketDTable = $ticketTable.DataTable({
+                processing: true,
+                serverSide: true,
+                // responsive: true,
+                select: {
+                    style: 'multi',
+                    selector: 'td:first-child input'
+                },
+                order: [
+                    [4, 'desc']
+                ],
+                dom: 'Bfrtip',
+                buttons: [
+                    'copyHtml5',
+                    'excelHtml5',
+                    'csvHtml5',
+                    'pdfHtml5'
+                ],
+                pageLength: 50,
+                columnDefs: [
+                    {
+                        targets: [0,1,2,3,4,5],
+                        className: 'manage-column',
+                    },
+                    {
+                        targets: [0,1,2,5],
+                        orderable: false,
+                    },
+                    {
+                        targets: [0,3,4,5],
+                        className: 'text-center',
+                    },
+                    {
+                        targets: [0],
+                        className: "text-center manage-column column-cb check-column",
+                        id: "cb",
+                        width : "40px"
+                    },
+                    {
+                        targets: [1],
+                        width : "25%"
+                    },
+                    {
+                        targets: [2,3,4],
+                        width : "15%"
+                    }
+                ],
+                ajax: {
+                    url : urlSourceData,
+                    data: function (d) {
+                        d.action =  "ticketsDataTable",
+                        d.form_id = $("#ticketFilterByForm").val(),
+                        d.caresoft_ticket = $("#ticketFilterByCareSoftStt").val()
+
+                    }
+                },
+                columns: [
+                    {
+                        title: `<!--<label class="screen-reader-text" for="cb-select-all">Chọn toàn bộ</label>-->
+                        <input id="cb-select-all" type="checkbox">`,
+                        name: "ticket_id", data: "ticket_id", class: 'check-column text-center',render: (data, type, row) => {
+                            var ticketId = data ,
+                                checkHtml = `<label class="screen-reader-text" for="cb-select-${ticketId}">Chọn </label>
+                                <input id="cb-select-${ticketId}" type="checkbox" name="tickets[]" value="${ticketId}">`;
+                            return checkHtml;
+                        }
+                    },
+                    {
+                        title: `<div class="font-weight-bold">
+                            <span class="dashicons dashicons-id"></span>  Tên Khách Hàng</div>`,
+                        name: "name", data: "name", render: function(data, type, row) {
+                            var name = data,
+                                nameHtml = `<h6 class="">
+                                    <a href="#" class="viewDetailTicket text-brand-blue"><span>${name}</span></a>
+                                </h6>`;
+                            return nameHtml;
+                        }
+                    },
+                    {
+                        title: `<div class="font-weight-bold text-left">
+                            <span class="dashicons dashicons-phone"></span>  Số Điện Thoại</div>`,
+                        name: "phone", data: "phone", render: function (data, type, row) {
+                            var phone = data,
+                                phoneHtml = `<a href="#" class="viewDetailTicket text-brand-blue"><span>${phone}</span></a>`;
+                            return phoneHtml;
+                        }
+                    },
+                    {
+                        title: `<div class="font-weight-bold">Tình Trạng CareSoft</div>`,
+                        name: "caresoft_ticket", data: "caresoft_ticket", render: function (data, type, row) {
+                            var caresoftTicket = typeof data == "object" ? data : {},
+                                careSoftSttHtml = `<div class="text-center">`;
+                            if (caresoftTicket) {
+                                var {created_at} = caresoftTicket,
+                                    time = created_at ? wmBags.dateTime(created_at).format('LT') : "";
+                                careSoftSttHtml += `<div class="text-success" data-toggle="tooltip" 
+                                                        data-placement="bottom" title="Lúc : ${time}">
+                                                        <span class="dashicons dashicons-yes"></span>
+                                                        Đã Tạo Ticket
+                                                    </div>`;
+                            } else {
+                                careSoftSttHtml += `<div class="text-danger" >
+                                                        <span class="dashicons dashicons-warning"></span>
+                                                        Chưa Có 
+                                                    </div>`;
+                            }
+                            careSoftSttHtml += `</div>`;
+                            return careSoftSttHtml;
+                        }
+                    },
+                    {
+                        title: `<div class="font-weight-bold">
+                            <span class="dashicons dashicons-clock"></span> 
+                            Ngày Đăng Kí</div>`,
+                        name: "created_at", data: "created_at", render: function (data, type, row) {
+                            var created_at = ["string", "number"].includes(typeof data) ? data : false,
+                                date = created_at ? wmBags.dateTime(created_at).format('ll') : "",
+                                time = created_at ? wmBags.dateTime(created_at).format('LT') : "",
+                                createdAtHtml = `<div class="text-center">
+                                    <span data-toggle="tooltip" data-placement="bottom" title="${time}">${date}</span>
+                                </div>`;
+                            return createdAtHtml
+                        }
+                    },
+                    {
+                        title: `<div class="font-weight-bold text-center">Từ Form</div>`
+                        ,className: "text-center", name: "form", data: "form", render: function (data, type, row) {
+                            var form = typeof data == "object" ? data : {},
+                                {name, title} = form,
+                                formHtml = `<a href="#" onclick="return false" class="">
+                                    <span class="text-brand-blue">${title} - ${name}</span></a>`;
+                            return formHtml;
+                        }
+                    }
+                ],
+                drawCallback: function (settings) {
+                    var dTable = this,
+                        table = dTable[0];
+                    ticketLib.whenTicketTableDraw(table);
+
+                    /*dTable.api().columns().every(function () {
+                        var column = this,
+                            select = $('<select><option value=""></option></select>')
+                                .appendTo( $(column.header()).empty() )
+                                .on( 'change', function () {
+                                    var val = $.fn.dataTable.util.escapeRegex(
+                                        $(this).val()
+                                    );
+                                    column
+                                        .search( val ? '^'+val+'$' : '', true, false )
+                                        .draw();
+                                } );
+
+                        column.data().unique().sort().each( function ( d, j ) {
+                            select.append( '<option value="'+d+'">'+d+'</option>' )
+                        } );
+                    });*/
+                },
+                initComplete : function (settings, json) {
+                    var dTable = this,
+                        table = dTable[0];
+                    ticketLib.ticketsFilter(table);
+                }
+            });
+        /*wmBags.jsonTransPortData({
+            type: 'get',
+            data: {
+                action: 'listTicket'
+            }
+        }, function (err, res) {
+            var {data, success} = typeof res == "object" ? res : {};
+            if (!err && success && data) {
+
+            } else {
+                alert("Không tìm thấy danh sách ticket");
+            }
+        });*/
     }
 
 
@@ -661,11 +967,6 @@
         if (check)
             wmBags.loadDataOnPage();
         window.wmBags = wmBags;
-
-        console.log(check);
-        return false;
-
-
         return false;
     }
 
@@ -674,9 +975,6 @@
         var options = typeof options == "object" ? options : {};
         if (element)
             return $(element).formBuilder = $(element).formBuilder(options);
-        
-
-
         return false;
     }
 
@@ -714,6 +1012,86 @@
                 callback("Có lỗi xảy ra");
             }
         });
+    }
+
+    wmBags.dateTime = (dateStr) => {
+        dateStr = ['string','number'].includes(typeof dateStr) && Date.parse(dateStr) > 0 ? Date.parse(dateStr) : false;
+        var date = dateStr ? new Date(dateStr) : null,
+            lib = {},
+            viMonthNames = [];
+
+        for (var i = 1;i < 13;i++) {
+            viMonthNames.push(`Tháng ${i}`);
+        }
+        lib.format = (type) => {
+            if (!date)
+                return null;
+            var day = date.getDate(),
+                month = date.getMonth(),
+                monthName = viMonthNames[month],
+                year = date.getFullYear(),
+                hours = date.getHours(),
+                minutes = date.getMinutes(),
+                seconds = date.getSeconds(),
+                ampm = hours >= 12 ? 'pm' : 'am';
+            ampm = ampm.toUpperCase();
+            hours = hours % 12;
+            hours = hours ? hours : 12; // the hour '0' should be '12'
+            minutes = minutes < 10 ? '0'+minutes : minutes;
+
+            if (type == 'LT')
+                date = `${hours}:${minutes} ${ampm}`;
+            if (type == 'LTS')
+                date = `${hours}:${minutes}:${seconds} ${ampm}`;
+            if (type == "L")
+                date = `${month}/${day}/${year}`;
+            if (type == "l")
+                date = `${day}/${month}/${year}`;
+            if (type == "LL")
+                date = `${monthName} ${day}, ${year}`;
+            if (type == "ll")
+                date = `${day} ${monthName}, ${year}`;
+
+            return date;
+        }
+
+        return lib;
+    }
+
+
+    wmBags.fullLoading = (add) => {
+        var lib = {},
+            loading = `<div class="text-center wmfullLoading">
+                <div class="spinner-border text-danger" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>`,
+            $fullLoading = $(loading);
+        add = typeof add == 'boolean' && add ? add : false;
+        lib.thisElement = (element) => {
+            if (add) {
+                $(element).append($fullLoading);
+            } else {
+                $(element).find('.wmfullLoading').remove();
+            }
+        }
+
+        return lib;
+    }
+
+    /**
+     *  Return check box
+     * */
+    function getCheckBox(all) {
+        var html = null;
+        var input = '<input type="checkbox" class="checkOnlyOne" name="select">';
+        if (all) {
+            var input = '<input class="checkall" type="checkbox" name="select-all">';
+        }
+        html = '<label class="option block mn">\n' + input +
+            '       <span class="checkbox mn"></span>\n' +
+            '   </label>';
+        return html;
     }
 
     $(document).ready(function () {
