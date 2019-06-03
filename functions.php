@@ -9,6 +9,7 @@
 $method = $_SERVER['REQUEST_METHOD'];
 $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
 
+
 add_action('init', array( 'webManagerLib', 'init' )); // Main Hook
 if ( class_exists('webManagerLib', false) ) return;
 
@@ -85,6 +86,8 @@ class webManagerLib {
                           `created_at` datetime(0) NULL DEFAULT NULL COMMENT 'Ngày tạo',
                           `updated_at` datetime(0) NULL DEFAULT NULL COMMENT 'Ngày cập nhật',
                           `caresoft_id` bigint(10) UNSIGNED NULL DEFAULT NULL COMMENT 'ID phân loại nguồn lead Caresoft',
+                          `nguon_phieu` bigint(10) UNSIGNED NULL DEFAULT NULL COMMENT 'ID phân loại nguồn lead Caresoft',
+                          `chi_tiet_nguon_phieu` bigint(10) UNSIGNED NULL DEFAULT NULL COMMENT 'ID phân loại nguồn lead Caresoft',
                           `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
                           PRIMARY KEY (`form_id`) USING BTREE
                         ) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Compact;
@@ -457,6 +460,7 @@ class webManagerLib {
             if ($hasCareSoftTicket == 'no') {
                 $sql .= "caresoft_ticket IS NULL ";
             }
+            $sql .= " ORDER BY created_at DESC";
 
             $filters = $wpdb->get_results( $sql, OBJECT );
             $data = (array)$filters;
@@ -875,17 +879,24 @@ class webManagerLib {
             $directional = isset($form['directional']) && is_string($form['directional']) ? $form['directional'] : null;
             $to_caresoft_now = isset($form['to_caresoft_now']) && in_array($form['to_caresoft_now'], ['on','off']) ? $form['to_caresoft_now'] : 'off' ;
             $caresoft_id = isset($form['caresoft_id']) && in_array(gettype($form['caresoft_id']), ['number', 'string']) && strlen((string)$form['caresoft_id']) == 5 ? $form['caresoft_id'] : null;
+            $nguon_phieu = isset($form['nguon_phieu']) ? $form['nguon_phieu'] : null ;
+            $chi_tiet_nguon_phieu = isset($form['chi_tiet_nguon_phieu']) ? $form['chi_tiet_nguon_phieu'] : null ;
+
             $form_custom_template = isset($form['form_custom_template']) && gettype($form['form_custom_template']) == 'array' ? json_encode($form['form_custom_template']) : null;
 
             if (!$title || !$name) {
                 wp_send_json_error('Missing required field', 402);
-            } else {
+            }else if($to_caresoft_now == 'on' && (is_null($nguon_phieu) || is_null($chi_tiet_nguon_phieu))){
+                wp_send_json_error('Missing required field', 402);
+            }else {
                 $newForm = array(
                     'title' => $title,
                     'name' => $name,
                     'directional' => $directional,
                     'to_caresoft_now' => $to_caresoft_now,
                     'caresoft_id' => $caresoft_id,
+                    'nguon_phieu' => $nguon_phieu,
+                    'chi_tiet_nguon_phieu' => $chi_tiet_nguon_phieu,
                     'form_custom_template' => $form_custom_template
                 );
 
@@ -916,6 +927,8 @@ class webManagerLib {
                 $form['to_caresoft_now'] = isset($form['to_caresoft_now']) && in_array($form['to_caresoft_now'], ['on','off']) ? $form['to_caresoft_now'] : null;
                 $form['directional'] = isset($form['directional']) && gettype($form['directional']) == "string" && strlen($form['directional']) > 0 ? $form['directional'] : null;
                 $form['caresoft_id'] = isset($form['caresoft_id']) && (int)$form['caresoft_id'] > 0 && strlen((string)$form['caresoft_id']) == 5 ? $form['caresoft_id'] : null;
+                $form['nguon_phieu'] = isset($form['nguon_phieu']) ? $form['nguon_phieu'] : null ;
+                $form['chi_tiet_nguon_phieu'] = isset($form['chi_tiet_nguon_phieu']) ? $form['chi_tiet_nguon_phieu'] : null ;
                 $form['form_custom_template'] = isset($form['form_custom_template']) && gettype($form['form_custom_template']) == 'array' ? json_encode($form['form_custom_template']) : null;
 
                 self::wmUpdateForm($form_id, $form, function ($err) {
@@ -1045,6 +1058,7 @@ class webManagerLib {
                     $newTicket['ticket_data_custom'] = json_encode($ticket);
                 }
 
+
                 self::wmReadForm($form_id, function ($err, $formData) use (&$newTicket) {
                     if (!$err && $formData) {
                         // Insert new ticket to database
@@ -1062,10 +1076,12 @@ class webManagerLib {
                             $name = $newTicket['name'];
                             $phone = $newTicket['phone'];
                             $caresoft_id = isset($formData->caresoft_id) ? $formData->caresoft_id : null;
-
+                            $nguon_phieu = isset($formData->nguon_phieu) ? $formData->nguon_phieu : null ;
+                            $chi_tiet_nguon_phieu = isset($formData->chi_tiet_nguon_phieu) ? $formData->chi_tiet_nguon_phieu : null ;
                             // Optimize api title and comment
                             $ticketComment .= "<br> <b style='color:firebrick'>Chi Tiết Đăng Kí</b>";
                             $ticketComment .= '<br> Link bài viết : '. $ticketDetail->href;
+
                             $postTitle = $ticketDetail && isset($ticketDetail->postTitle) && !is_null($ticketDetail->postTitle) ? $ticketDetail->postTitle : false;
                             if ($postTitle) {
                                 $title .= ' - ' . $postTitle;
@@ -1076,7 +1092,7 @@ class webManagerLib {
                                 $ticketComment .= "<br> Lời nhắn của khách hàng";
                             }
 
-                            $options = array($title, $ticketComment, $email, $phone, $name, $caresoft_id);
+                            $options = array($title, $ticketComment, $email, $phone, $name, $caresoft_id,$nguon_phieu,$chi_tiet_nguon_phieu);
                             $ticketCareSoft = self::sendTicketToCareSoft($options);
                             // If can't send to caresoft
                             if (!$ticketCareSoft) {
@@ -1109,9 +1125,11 @@ class webManagerLib {
         if (!$options)
             return false;
 
-        list($title , $ticket_comment, $email, $phone, $username, $caresoft_id) = $options;
+        list($title , $ticket_comment, $email, $phone, $username, $caresoft_id,  $nguon_phieu, $chi_tiet_nguon_phieu) = $options;
 
         $caresoft_id = isset($caresoft_id) && !is_null($caresoft_id) && (int)$caresoft_id > 0 ? $caresoft_id : 42124;
+        $nguon_phieu = isset($nguon_phieu) && !is_null($nguon_phieu) && (int)$nguon_phieu > 0 ? $nguon_phieu : 41890;
+        $chi_tiet_nguon_phieu = isset($chi_tiet_nguon_phieu) && !is_null($chi_tiet_nguon_phieu) && (int)$chi_tiet_nguon_phieu > 0 ? $chi_tiet_nguon_phieu : 42112;
         $title = isset($title) && gettype($title) == "string" && strlen($title) > 0 ? $title : false;
         $ticket_comment = isset($ticket_comment) && gettype($ticket_comment) == "string" && strlen($ticket_comment) > 0 ? $ticket_comment : false;
         $email = isset($email) && !is_null($email) && strlen($email) > 0 ? $email : "";
@@ -1122,7 +1140,7 @@ class webManagerLib {
         if ($title && $username && $phone) {
             $urlSend = "https://api.caresoft.vn/tmvngocdung/api/v1/tickets";
             $agent = self::getAgentsAssignee();
-            $custom_field = '{"id": "3406", "value": "41875"},{"id": "1448", "value": "41890"},{"id": "1416", "value": "'.$caresoft_id.'"}';
+            $custom_field = '{"id": "3406", "value": "41875"},{"id": "1448", "value": "'.$nguon_phieu.'"},{"id": "1416", "value": "'.$chi_tiet_nguon_phieu.'"}';
             $postStr = '{"ticket": {"ticket_subject": "'.$title.'","ticket_comment":  "'.$ticket_comment.'","email": "'.$email.'","phone": "'.$phone.'","username": "'.$username.'","ticket_priority": "Normal", "service_id" : "950022","assignee_id": "'.$agent.'","custom_fields": ['.$custom_field.']}}';
             $sendResult = json_decode(self::sendPostData($urlSend, $postStr));
             $success = isset($sendResult->code) && $sendResult->code == 'ok' ? true : false;
