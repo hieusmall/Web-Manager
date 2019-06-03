@@ -93,9 +93,48 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                             <input name="directional" type="text" value="" class="regular-text" placeholder="http://example.vn">
                         </td>
                     </tr>
-                    <tr>
+                   <!--  <tr>
                         <th><span>ID CareSoft</span></th>
                         <td><input name="caresoft_id" maxlength="5" type="text" value="" class="small-text" placeholder="ID nguồn lead CareSoft hoặc để trống trống"></td>
+                    </tr> -->
+                    <tr>
+                        <th><span>Nguồn phiếu</span></th>
+                        <td>
+                            <select style="    width: 35%;"  id="nguon_phieu" name="nguon_phieu" class="form-control">
+                            <option value="">Vui lòng chọn Nguồn phiếu ghi</option>
+                                    <option value="41890">182 - Quảng cáo</option>
+                                    <option value="41893">188 - Social</option>
+                                    <option value="41896">173 - SEO</option>
+                                    <option value="41899">179 - Đối tác</option>
+                                    <option value="41902">176 - Offline</option>
+                                    <option value="41905">186 - CSKH</option>
+                                    <option value="42106">175 - Hotline</option>
+                                    <option value="42109">174 - Livechat</option>
+                                    <option value="42178">187 - TVOL</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><span>Chi tiết nguồn phiếu</span></th>
+                        <td>
+                            <select style="    width: 35%;" id="chi_tiet_nguon_phieu" name="chi_tiet_nguon_phieu" class="form-control">
+                                <option value="">Vui lòng chọn chi tiết Nguồn phiếu ghi</option>
+                                <option value="42112">Chưa phân loại</option>
+                                <option value="42115">MB</option>
+                                <option value="42118">MT</option>
+                                <option value="42121">MN</option>
+                                <option value="42124">HCM</option>
+                                <option value="41920">SEO 1</option>
+                                <option value="41923">SEO 2 SMS</option>
+                                <option value="41926">Criteo</option>
+                                <option value="41929">T04</option>
+                                <option value="41932">T05</option>
+                                <option value="41935">T06</option>
+                                <option value="42490">T07</option>
+                                <option value="44116">KOLs</option>
+                                <option value="44119">Khác</option>
+                            </select>
+                        </td>
                     </tr>
                 </table>
                 <p class="submit form-action-group">

@@ -881,7 +881,7 @@ class webManagerLib {
             $caresoft_id = isset($form['caresoft_id']) && in_array(gettype($form['caresoft_id']), ['number', 'string']) && strlen((string)$form['caresoft_id']) == 5 ? $form['caresoft_id'] : null;
             $nguon_phieu = isset($form['nguon_phieu']) ? $form['nguon_phieu'] : null ;
             $chi_tiet_nguon_phieu = isset($form['chi_tiet_nguon_phieu']) ? $form['chi_tiet_nguon_phieu'] : null ;
-
+            
             $form_custom_template = isset($form['form_custom_template']) && gettype($form['form_custom_template']) == 'array' ? json_encode($form['form_custom_template']) : null;
 
             if (!$title || !$name) {
@@ -927,8 +927,8 @@ class webManagerLib {
                 $form['to_caresoft_now'] = isset($form['to_caresoft_now']) && in_array($form['to_caresoft_now'], ['on','off']) ? $form['to_caresoft_now'] : null;
                 $form['directional'] = isset($form['directional']) && gettype($form['directional']) == "string" && strlen($form['directional']) > 0 ? $form['directional'] : null;
                 $form['caresoft_id'] = isset($form['caresoft_id']) && (int)$form['caresoft_id'] > 0 && strlen((string)$form['caresoft_id']) == 5 ? $form['caresoft_id'] : null;
-                $form['nguon_phieu'] = isset($form['nguon_phieu']) ? $form['nguon_phieu'] : null ;
-                $form['chi_tiet_nguon_phieu'] = isset($form['chi_tiet_nguon_phieu']) ? $form['chi_tiet_nguon_phieu'] : null ;
+                   $form['nguon_phieu'] = isset($form['nguon_phieu']) ? $form['nguon_phieu'] : null ;
+             $form['chi_tiet_nguon_phieu'] = isset($form['chi_tiet_nguon_phieu']) ? $form['chi_tiet_nguon_phieu'] : null ;
                 $form['form_custom_template'] = isset($form['form_custom_template']) && gettype($form['form_custom_template']) == 'array' ? json_encode($form['form_custom_template']) : null;
 
                 self::wmUpdateForm($form_id, $form, function ($err) {
@@ -1057,7 +1057,7 @@ class webManagerLib {
 
                     $newTicket['ticket_data_custom'] = json_encode($ticket);
                 }
-
+                            
 
                 self::wmReadForm($form_id, function ($err, $formData) use (&$newTicket) {
                     if (!$err && $formData) {
@@ -1074,7 +1074,7 @@ class webManagerLib {
                             $ticketComment = "";
                             $email = $newTicket['email'] ? $newTicket['email'] : null;
                             $name = $newTicket['name'];
-                            $phone = $newTicket['phone'];
+                            $phone = $newTicket['phone'];                            
                             $caresoft_id = isset($formData->caresoft_id) ? $formData->caresoft_id : null;
                             $nguon_phieu = isset($formData->nguon_phieu) ? $formData->nguon_phieu : null ;
                             $chi_tiet_nguon_phieu = isset($formData->chi_tiet_nguon_phieu) ? $formData->chi_tiet_nguon_phieu : null ;

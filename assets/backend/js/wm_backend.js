@@ -313,7 +313,7 @@
                                 date = created_at ? wmBags.dateTime(created_at).format('ll') : "",
                                 time = created_at ? wmBags.dateTime(created_at).format('LT') : "",
                                 createdAtHtml = `<div class="text-center">
-                                    <span data-toggle="tooltip" data-placement="bottom" title="${time}">${date}</span>
+                                    <span data-toggle="tooltip" data-placement="bottom" title="${time}">${date} ${time}</span>
                                 </div>`;
                             return createdAtHtml
                         }
@@ -1041,6 +1041,8 @@
 
             if (type == 'LT')
                 date = `${hours}:${minutes} ${ampm}`;
+            if (type == 'FULL')
+                date = `${month}/${day}/${year} ${hours}:${minutes} ${ampm}`;
             if (type == 'LTS')
                 date = `${hours}:${minutes}:${seconds} ${ampm}`;
             if (type == "L")
