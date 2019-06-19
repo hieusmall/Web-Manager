@@ -426,13 +426,13 @@
                 order: [
                     [4, 'desc']
                 ],
-                /*dom: 'Bfrtip',
+                dom: 'Bfrtip',
                 buttons: [
                     'copyHtml5',
                     'excelHtml5',
                     'csvHtml5',
                     'pdfHtml5'
-                ],*/
+                ],
                 pageLength: 10,
                 pagingType: "full_numbers",
                 columnDefs: [
