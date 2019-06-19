@@ -70,7 +70,9 @@
         ticketLib.whenTicketTableDraw = (table) => {
             var $table = $(table),
                 $checkall = $table.find('thead th.column-cb.check-column input'),
-                $checkOneItems = $table.find('tbody td.check-column input');
+                $checkOneItems = $table.find('tbody td.check-column input'),
+                $body = $table.find('tbody'),
+                $trs = $body.find("tr");
 
             // Setup check all for this table
             $checkall.off('click');
@@ -94,10 +96,29 @@
             // Setup tooltips for this table
             $ticketTable.find('[data-toggle="tooltip"]').tooltip({ boundary: 'window' });
 
-            // Setup view ticket detail
-            var $showButtons = $table.find('.viewDetailTicket');
-            $showButtons.each(function (i, button) {
-                ticketLib.viewDetailTicket(button);
+            $trs.each(function (i, tr) {
+                var $tr = $(tr),
+                    rowData = $ticketDTable.row(i).data(),
+                    $toCsNnow = $tr.find('.toCareSoftNow'),
+                    $showButtons = $tr.find('.viewDetailTicket');
+
+                $showButtons.each(function (i, button) {
+                    ticketLib.viewDetailTicket(button);
+                });
+
+                $toCsNnow.off('click')
+                $toCsNnow.on('click', function (e) {
+                    e.preventDefault(e);
+                    var {ticket_id} = rowData;
+                    wmBags.jsonTransPortData({type: 'post', data: {action: 'ticketToCareSoftNow', ticket_id: ticket_id}}, (err, res) => {
+                        var {success, msg} = typeof res == "object" ? res : {};
+                        if (!err && success) {
+                            $ticketDTable.draw();
+                        } else {
+                            alert("Không thể tạo mới ticket caresoft : " + msg);
+                        }
+                    });
+                });
             });
 
             return false;
@@ -114,13 +135,18 @@
                     {name, phone, email,note, created_at, detail} = typeof rowData == "object" ? rowData : {},
                     {href, postTitle} = detail;
 
+
+                email = email ? email : "";
+                note = note ? note : "";
+                created_at = created_at ? wmBags.dateTime(created_at).format("L") : "" ;
+
                 $modalSnapShot.on('show.bs.modal', function () {
                     $modalSnapShot.find('.ticketName').text(name);
                     $modalSnapShot.find('.ticketPhone').text(phone);
                     $modalSnapShot.find('.ticketEmail').text(email);
                     $modalSnapShot.find('.ticketNote').text(note);
                     $modalSnapShot.find('.ticketCreated').text(created_at);
-                    $modalSnapShot.find('.ticketHrefUrl').text(href);
+                    $modalSnapShot.find('.ticketHrefUrl').attr("href", href);
                     $modalSnapShot.find('.ticketPostTitle').text(postTitle);
                 })
 
@@ -188,6 +214,201 @@
                 e.preventDefault();
                 $ticketDTable.draw();
             });
+
+
+            // Filter by created_at
+            var $createdFilters = $filterWrapper.find("#ticketFilterByDateRange");
+            var start = moment().subtract(29, 'days'),
+                end = moment();
+            function cb(start, end) {
+                var startQuery = start._d.toISOString(),
+                    endQuery = end._d.toISOString();
+                // $('#chartFilterDateRange').parent().find("#dates").val(getDates(start._d, end._d));
+                $createdFilters.parent().find("#ticketCreatedStartDate").val(startQuery);
+                $createdFilters.parent().find("#ticketCreatedEndDate").val(endQuery);
+                $createdFilters.find('span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+                $ticketDTable.draw();
+            }
+            $createdFilters.daterangepicker({
+                startDate: start,
+                endDate: end,
+                ranges: {
+                    'Hôm nay': [moment(), moment()],
+                    'Hôm Qua': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                    '7 Ngày qua': [moment().subtract(6, 'days'), moment()],
+                    '30 Ngày qua': [moment().subtract(29, 'days'), moment()],
+                    'Tháng này': [moment().startOf('month'), moment().endOf('month')],
+                    'Tháng Trước': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                }
+            }, cb);
+            cb(start, end);
+        }
+        ticketLib.chartTicketsFilter = () => {
+            var $filterWrapper = $('.cardTicketsChart').find("#filters_chart_ticket_wrapper");
+
+            // Filter by form
+            var $ticketFilterByForm = $filterWrapper.find("#chartFilterByForm"),
+                // formFiterItems = `<option value="">---- Tất Cả Form ----</option>`,
+                formFiterItems = ``;
+            wmBags.jsonTransPortData({type: 'get',data: {action: "listForm"}}, function (err, res) {
+                var {success, data} = typeof res == "object" ? res : {};
+                if (!err && success && data) {
+                    data.forEach(function (formItem) {
+                        var {form_id, name, title} = formItem;
+                        formFiterItems += `<option value="${form_id}">${title} - ${name}</option>`;
+                    });
+                    $ticketFilterByForm.html(formFiterItems);
+                    $ticketFilterByForm.selectpicker({
+                        selectedTextFormat: 'count > 3',
+                        showTick: true,
+                        style: 'btn-light',
+                        selectAllText: "<span class='text-success'>Tất Cả</span>",
+                        deselectAllText: "<span class='text-danger'>Hủy Chọn</span>",
+                        noneSelectedText: "Tất Cả",
+                        showTick: true,
+                        actionsBox :true
+                    });
+                    $ticketFilterByForm.on('change',function (e) {
+                        e.preventDefault();
+                    });
+                } else {
+                    console.log("Can't load form filter");
+                }
+            });
+
+
+            // Filter daterange
+            var thisMonth = wmBags.getDaysInMonth(new Date().getMonth(), new Date().getFullYear());
+            var start = moment().subtract(29, 'days'),
+                end = moment();
+            function cb(start, end) {
+                var startQuery = start._d.toISOString(),
+                    endQuery = end._d.toISOString();
+                // $('#chartFilterDateRange').parent().find("#dates").val(getDates(start._d, end._d));
+                $('#chartFilterDateRange').parent().find("#startdate").val(startQuery);
+                $('#chartFilterDateRange').parent().find("#enddate").val(endQuery);
+                $('#chartFilterDateRange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+            }
+            $('#chartFilterDateRange').daterangepicker({
+                startDate: start,
+                endDate: end,
+                ranges: {
+                    'Hôm nay': [moment(), moment()],
+                    'Hôm Qua': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                    '7 Ngày qua': [moment().subtract(6, 'days'), moment()],
+                    '30 Ngày qua': [moment().subtract(29, 'days'), moment()],
+                    'Tháng này': [moment().startOf('month'), moment().endOf('month')],
+                    'Tháng Trước': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                }
+            }, cb);
+            cb(start, end);
+
+            $filterWrapper.off("submit");
+            $filterWrapper.on("submit", function (e) {
+                e.preventDefault(e);
+                ticketLib.chartTickets().draw();
+            });
+        }
+        ticketLib.chartTickets = () => {
+            var c = {},
+                target = document.querySelector("#ticketChart"),
+                $target = $(target);
+            c.data = () => {
+                var chartFilterData = {};
+                $("#filters_chart_ticket_wrapper").find(":input").each(function (i, field) {
+                    var {name, type, value} = field;
+                    if (["submit","button"].includes(type)) return ;
+                    if (name && value) {
+                        chartFilterData[name] = $(field).val();
+                    }
+                });
+                var {startdate, enddate} = chartFilterData;
+                var dates = getDates(startdate, enddate);
+                chartFilterData.dates = dates;
+                return chartFilterData;
+            }
+            c.setup = () => {
+                ticketLib.chartTicketsFilter();
+            }
+            c.start = () => {
+                c.setup();
+                var ajaxData = c.data(),
+                    {dates} = ajaxData;
+                ajaxData.action = 'ticketCharts';
+                // ajaxData.dates = categories;
+                var options = {
+                    chart: {
+                        height: 350,
+                        type: 'area',
+                    },
+                    dataLabels: {
+                        enabled: false
+                    },
+                    stroke: {
+                        width: 7,
+                        curve: 'smooth'
+                    },
+                    tooltip: {
+                        x: {
+                            format: 'dd/MM/yy'
+                        },
+                    },
+                    series: [{
+                        // name: 'Tickets',
+                        data: []
+                    }],
+                    xaxis: {
+                        // categories: dates,
+                        type: 'datetime',
+                    },
+                    yaxis: {
+                        opposite: true,
+                        title: {
+                            text: 'Tickets',
+                        },
+                    },
+                    markers: {
+                        size: 4,
+                        opacity: 0.9,
+                        colors: ["#FFA41B"],
+                        strokeColor: "#fff",
+                        strokeWidth: 2,
+                        hover: {
+                            size: 7,
+                        }
+                    }
+                };
+                var chart = new ApexCharts(target,options);
+                chart.render();
+                target.chart = chart;
+                // Start Charts
+                wmBags.jsonTransPortData({type:"get",data: ajaxData}, function (err, res) {
+                    var {success, data, type} = typeof res == "object" ? res : {};
+                    if (!err && success && data) {
+                        chart.updateOptions({
+                            series: data
+                        });
+                    }
+                });
+            }
+            c.draw = () => {
+                var newData = c.data(),
+                    chart = target.chart;
+                newData.action = 'ticketCharts';
+                // example of series in another format
+                wmBags.jsonTransPortData({type: "get",data: newData}, function (err, res) {
+                    var {success, data} = typeof res == "object" ? res : {};
+                    if (!err && success && data) {
+                        // example of series in another format
+                        chart.updateOptions({
+                            series: data
+                        });
+                    } else {
+                        console.log("Khong the cap nhat bang");
+                    }
+                })
+            }
+            return c;
         }
 
         // Ticket data table
@@ -197,7 +418,7 @@
             $ticketDTable = $ticketTable.DataTable({
                 processing: true,
                 serverSide: true,
-                // responsive: true,
+                responsive: true,
                 select: {
                     style: 'multi',
                     selector: 'td:first-child input'
@@ -205,14 +426,15 @@
                 order: [
                     [4, 'desc']
                 ],
-                dom: 'Bfrtip',
+                /*dom: 'Bfrtip',
                 buttons: [
                     'copyHtml5',
                     'excelHtml5',
                     'csvHtml5',
                     'pdfHtml5'
-                ],
-                pageLength: 50,
+                ],*/
+                pageLength: 10,
+                pagingType: "full_numbers",
                 columnDefs: [
                     {
                         targets: [0,1,2,3,4,5],
@@ -223,7 +445,7 @@
                         orderable: false,
                     },
                     {
-                        targets: [0,3,4,5],
+                        targets: [0,2,3,4,5],
                         className: 'text-center',
                     },
                     {
@@ -235,10 +457,6 @@
                     {
                         targets: [1],
                         width : "25%"
-                    },
-                    {
-                        targets: [2,3,4],
-                        width : "15%"
                     }
                 ],
                 ajax: {
@@ -246,8 +464,9 @@
                     data: function (d) {
                         d.action =  "ticketsDataTable",
                         d.form_id = $("#ticketFilterByForm").val(),
-                        d.caresoft_ticket = $("#ticketFilterByCareSoftStt").val()
-
+                        d.caresoft_ticket = $("#ticketFilterByCareSoftStt").val(),
+                        d.startdate = $("#ticketCreatedStartDate").val(),
+                        d.enddate = $("#ticketCreatedEndDate").val()
                     }
                 },
                 columns: [
@@ -275,6 +494,7 @@
                     {
                         title: `<div class="font-weight-bold text-left">
                             <span class="dashicons dashicons-phone"></span>  Số Điện Thoại</div>`,
+                        width: 100,
                         name: "phone", data: "phone", render: function (data, type, row) {
                             var phone = data,
                                 phoneHtml = `<a href="#" class="viewDetailTicket text-brand-blue"><span>${phone}</span></a>`;
@@ -283,21 +503,29 @@
                     },
                     {
                         title: `<div class="font-weight-bold">Tình Trạng CareSoft</div>`,
+                        width: 150,
                         name: "caresoft_ticket", data: "caresoft_ticket", render: function (data, type, row) {
-                            var caresoftTicket = typeof data == "object" ? data : {},
+                            var caresoftTicket = data && typeof data == "object" ? data : {},
+                                {created_at, ticket_id} = caresoftTicket,
                                 careSoftSttHtml = `<div class="text-center">`;
-                            if (caresoftTicket) {
-                                var {created_at} = caresoftTicket,
-                                    time = created_at ? wmBags.dateTime(created_at).format('LT') : "";
-                                careSoftSttHtml += `<div class="text-success" data-toggle="tooltip" 
+
+                            if (created_at) {
+                                    var time = created_at ? wmBags.dateTime(created_at).format('FULL') : "";
+                                careSoftSttHtml += `<div class="" data-toggle="tooltip" 
                                                         data-placement="bottom" title="Lúc : ${time}">
-                                                        <span class="dashicons dashicons-yes"></span>
-                                                        Đã Tạo Ticket
+                                                        <a style="text-decoration: none !important;" class="text-success" target="_blank" href="//web1.caresoft.vn/tmvngocdung#/index?type=ticket&id=${ticket_id}">
+                                                            <span class="dashicons dashicons-yes"></span>
+                                                            Đã Tạo Ticket
+                                                        </a>
                                                     </div>`;
                             } else {
-                                careSoftSttHtml += `<div class="text-danger" >
+                                careSoftSttHtml += `<div class="text-danger" style="line-height: 20px;">
                                                         <span class="dashicons dashicons-warning"></span>
-                                                        Chưa Có 
+                                                        <span>Chưa Có</span>
+                                                        <a href="#" class="toCareSoftNow text-success" data-toggle="tooltip" 
+                                                        data-placement="bottom" title="Đưa lên CareSoft">
+                                                            <span class="dashicons dashicons-upload"></span>
+                                                        </a>
                                                     </div>`;
                             }
                             careSoftSttHtml += `</div>`;
@@ -307,7 +535,7 @@
                     {
                         title: `<div class="font-weight-bold">
                             <span class="dashicons dashicons-clock"></span> 
-                            Ngày Đăng Kí</div>`,
+                            Ngày Đăng Kí</div>`,width : 180,
                         name: "created_at", data: "created_at", render: function (data, type, row) {
                             var created_at = ["string", "number"].includes(typeof data) ? data : false,
                                 date = created_at ? wmBags.dateTime(created_at).format('ll') : "",
@@ -358,19 +586,17 @@
                     ticketLib.ticketsFilter(table);
                 }
             });
-        /*wmBags.jsonTransPortData({
-            type: 'get',
-            data: {
-                action: 'listTicket'
-            }
-        }, function (err, res) {
-            var {data, success} = typeof res == "object" ? res : {};
-            if (!err && success && data) {
 
-            } else {
-                alert("Không tìm thấy danh sách ticket");
-            }
-        });*/
+
+        // Ticket Charts
+        var data = [],
+            date = new Date(),
+            month = date.getMonth(),
+            years = date.getFullYear(),
+            categories = wmBags.getDaysInMonth(4, years),
+            ticketChart = "#ticketChart";
+
+        ticketLib.chartTickets().start();
     }
 
 
@@ -1029,6 +1255,7 @@
             var day = date.getDate(),
                 month = date.getMonth(),
                 monthName = viMonthNames[month],
+                month = month + 1,
                 year = date.getFullYear(),
                 hours = date.getHours(),
                 minutes = date.getMinutes(),
@@ -1053,13 +1280,15 @@
                 date = `${monthName} ${day}, ${year}`;
             if (type == "ll")
                 date = `${day} ${monthName}, ${year}`;
+            if (type == "y-m-d") {
+                date = `${year}-${month}-${day}`;
+            }
 
             return date;
         }
 
         return lib;
     }
-
 
     wmBags.fullLoading = (add) => {
         var lib = {},
@@ -1081,6 +1310,21 @@
         return lib;
     }
 
+    wmBags.getDaysInMonth = (month, year) => {
+        var currentDate = new Date();
+        // month = month ? month : currentDate.getMonth();
+        year = year ? year : currentDate.getFullYear()
+        var date = new Date(year, month, 1);
+        var days = [];
+        while (date.getMonth() === month) {
+            var day = new Date(date);
+            days.push(day.toISOString());
+            date.setDate(date.getDate() + 1);
+        }
+        return days;
+    }
+
+
     /**
      *  Return check box
      * */
@@ -1095,6 +1339,24 @@
             '   </label>';
         return html;
     }
+
+    Date.prototype.addDays = function(days) {
+        var date = new Date(this.valueOf());
+        date.setDate(date.getDate() + days);
+        return date;
+    }
+    function getDates(startDate, stopDate) {
+        startDate = new Date(startDate);
+        stopDate = new Date(stopDate);
+        var dateArray = new Array();
+        var currentDate = startDate;
+        while (currentDate <= stopDate) {
+            dateArray.push(new Date(currentDate).toISOString());
+            currentDate = currentDate.addDays(1);
+        }
+        return dateArray;
+    }
+
 
     $(document).ready(function () {
         wmBags.init();

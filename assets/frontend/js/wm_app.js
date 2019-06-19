@@ -70,7 +70,6 @@
         $forms.each(function (k, form) {
             var $form = $(form);
             var $elements = $form.find(':input');
-
             var {directional,form_id} = $form.data();
 
             // Create formElemnts
@@ -201,13 +200,17 @@
 
             $form.on('submit', function (e) {
                 e.preventDefault(e);
-                var $f = $(this);
-                var $submitBtn = $f.find(".btnSubmit");
+                var $f = $(this),
+                    form = $f.get(0);
+                var $submitBtn = $f.find(".btnSubmit").length > 0 ? $f.find(".btnSubmit") : $(form.submit),
+                    defaultTextSubmit = $submitBtn.text();
                 // var snapShot = $f.children().clone();
                 var ticket = $f.data();
                 var $popup = $f.closest('.wm-campaign-popup');
 
                 // Disabled button submit
+                $submitBtn.html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span class="sr-only">Đang gửi!...</span>`);
                 $submitBtn.attr('disabled', true);
 
                 var $fields = $f.find(":input");
@@ -285,6 +288,7 @@
                             alert("Đăng kí thất bại");
                         }
 
+                        $submitBtn.html(defaultTextSubmit);
                         $submitBtn.attr("disabled", false);
                         return false;
                     });

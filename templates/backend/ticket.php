@@ -21,6 +21,39 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
         <?php // echo webManagerLib::wmTableTicket() ?>
     </form>
 
+    <div class="card cardTicketsChart wm-card-full wm-whiteframe-4dp">
+        <h5 class="text-capitalize font-weight-normal">Thống kê Ticket</h5>
+        <form id="filters_chart_ticket_wrapper" class="mt-5">
+            <div class="row">
+                <div class="form-group">
+                    <label for="chartFilterByDateRange">Thời gian</label>
+                    <!--  <input type="text" class="form-control" id="chartFilterByDateRange" placeholder="Ngày" hidden>-->
+                    <input type="hidden" class="form-control" id="startdate" name="startdate">
+                    <input type="hidden" class="form-control" id="enddate" name="enddate">
+                    <div id="chartFilterDateRange" style="background: #fff; cursor: pointer;
+                    padding: 5px 10px; border: 1px solid #ccc; width: 100%">
+                        <i class="fa fa-calendar"></i>
+                        <span></span> <i class="fa fa-caret-down"></i>
+                    </div>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="chartFilterByForm">Form</label>
+                    <select multiple class="form-control filterSelectpicker" name="form_id" id="chartFilterByForm"></select>
+                </div>
+
+                <div class="form-group col-md-12">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <span><i class="fa fa-filter" aria-hidden="true"></i></span>
+                        <span>Lọc</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <div id="ticketChart">
+        </div>
+    </div>
+
     <div class="card cardLeadTables wm-card-full wm-whiteframe-4dp">
         <h5 class="text-capitalize font-weight-normal">Danh sách Ticket</h5>
 
@@ -42,6 +75,17 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                         <label for="ticketFilterByCreated">Ngày Đăng Ký</label>
                         <select class="form-control" name="created_at" id="ticketFilterByCreated"></select>
                     </div>-->
+                    <div class="form-group">
+                        <label for="ticketFilterByDateRange">Ngày Đăng Kí</label>
+                        <!--  <input type="text" class="form-control" id="chartFilterByDateRange" placeholder="Ngày" hidden>-->
+                        <input type="hidden" class="form-control" id="ticketCreatedStartDate" name="startdate">
+                        <input type="hidden" class="form-control" id="ticketCreatedEndDate" name="enddate">
+                        <div id="ticketFilterByDateRange" style="background: #fff; cursor: pointer;
+                    padding: 5px 10px; border: 1px solid #ccc; width: 100%">
+                            <i class="fa fa-calendar"></i>
+                            <span></span> <i class="fa fa-caret-down"></i>
+                        </div>
+                    </div>
                 </div>
             </form>
 
@@ -86,7 +130,7 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                         </li>
                         <li class="list-group-item">
                             <span class="dashicons dashicons-admin-links"></span> Link Đăng Ký :
-                            <span class="ticketHrefUrl">https://example.vn</span>
+                            <a class="ticketHrefUrl" target="_blank" href="#"><span>Xem Page</span></a>
                         </li>
                         <li class="list-group-item">
                             <span class="dashicons dashicons-flag"></span> Tiêu Đề Page :
