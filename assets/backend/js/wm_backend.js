@@ -433,6 +433,7 @@
                     'csvHtml5',
                     'pdfHtml5'
                 ],
+                paging: true,
                 pageLength: 10,
                 pagingType: "full_numbers",
                 columnDefs: [
