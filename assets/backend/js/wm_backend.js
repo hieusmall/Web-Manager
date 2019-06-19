@@ -426,7 +426,7 @@
                 order: [
                     [4, 'desc']
                 ],
-                dom: 'Bfrtip',
+                dom: 'Blfrtip',
                 buttons: [
                     'copyHtml5',
                     'excelHtml5',
