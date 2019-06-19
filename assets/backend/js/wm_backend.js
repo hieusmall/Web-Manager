@@ -6,7 +6,7 @@
 
     wmBags.acceptPage = ['formList', 'formNew', 'formUpdate',
         'popupList','popupNew','popupUpdate',
-    'ticketList','ticketNew','ticketUpdate'];
+        'ticketList','ticketNew','ticketUpdate'];
 
     wmBags.getPageActive = (page) => {
         var $allPageWraps = $(document).find('.wmAdminWrap');
@@ -463,10 +463,10 @@
                     url : urlSourceData,
                     data: function (d) {
                         d.action =  "ticketsDataTable",
-                        d.form_id = $("#ticketFilterByForm").val(),
-                        d.caresoft_ticket = $("#ticketFilterByCareSoftStt").val(),
-                        d.startdate = $("#ticketCreatedStartDate").val(),
-                        d.enddate = $("#ticketCreatedEndDate").val()
+                            d.form_id = $("#ticketFilterByForm").val(),
+                            d.caresoft_ticket = $("#ticketFilterByCareSoftStt").val(),
+                            d.startdate = $("#ticketCreatedStartDate").val(),
+                            d.enddate = $("#ticketCreatedEndDate").val()
                     }
                 },
                 columns: [
@@ -510,7 +510,7 @@
                                 careSoftSttHtml = `<div class="text-center">`;
 
                             if (created_at) {
-                                    var time = created_at ? wmBags.dateTime(created_at).format('FULL') : "";
+                                var time = created_at ? wmBags.dateTime(created_at).format('FULL') : "";
                                 careSoftSttHtml += `<div class="" data-toggle="tooltip" 
                                                         data-placement="bottom" title="Lúc : ${time}">
                                                         <a style="text-decoration: none !important;" class="text-success" target="_blank" href="//web1.caresoft.vn/tmvngocdung#/index?type=ticket&id=${ticket_id}">
@@ -548,11 +548,13 @@
                     },
                     {
                         title: `<div class="font-weight-bold text-center">Từ Form</div>`
-                        ,className: "text-center", name: "form", data: "form", render: function (data, type, row) {
-                            var form = typeof data == "object" ? data : {},
-                                {name, title} = form,
+                        ,className: "text-center", name: "form", data: "form", render: function (form, type, row) {
+                            var {name, title} = typeof form == "object" && form instanceof Object ? form : {},
+                                formHtml = "";
+                            if (name && title) {
                                 formHtml = `<a href="#" onclick="return false" class="">
-                                    <span class="text-brand-blue">${title} - ${name}</span></a>`;
+                                <span class="text-brand-blue">${title} - ${name}</span></a>`;
+                            }
                             return formHtml;
                         }
                     }

@@ -435,7 +435,6 @@ class webManagerLib {
         $hasCareSoftTicket = isset($caresoft_ticket) && !is_null($caresoft_ticket) ? $caresoft_ticket : false;
         $startdate = isset($startdate) && !is_null($startdate) && $startdate ? self::dateTimeToYMD($startdate) : false;
         $enddate = isset($enddate) && !is_null($enddate) && $enddate ? self::dateTimeToYMD($enddate) : false;
-
         $isFilter = $filterByFormIds || $hasCareSoftTicket || $startdate || $enddate ? true : false;
 
         global $wpdb;
@@ -466,10 +465,14 @@ class webManagerLib {
             if ($startdate || $enddate) {
                 if ($filterByFormIds || $hasCareSoftTicket) $query .= " and";
                 if ($startdate && $enddate) {
-                    $query .= " created_at between '$startdate' and '$enddate'";
+                    if ($startdate != $enddate) {
+                        $query .= " created_at between '$startdate' and '$enddate'";
+                    } else {
+                        $query .= " created_at like '%$startdate%'";
+                    }
                 } elseif ($startdate) {
                     $query .= " created_at like '%$startdate%'";
-                } elseif($enddate) {
+                } elseif ($enddate) {
                     $query .= " created_at like '%$enddate%'";
                 }
             }
@@ -667,9 +670,9 @@ class webManagerLib {
                     $result = (array)$result[0];
                     $y = (int)$result['count(*)'];
                     array_push($formChart['data'], (object)array(
-                            'x' => $date,
-                            'y' => $y
-                        )
+                        'x' => $date,
+                        'y' => $y
+                    )
                     );
                 }
 
@@ -1066,7 +1069,7 @@ class webManagerLib {
             $caresoft_id = isset($form['caresoft_id']) && in_array(gettype($form['caresoft_id']), ['number', 'string']) && strlen((string)$form['caresoft_id']) == 5 ? $form['caresoft_id'] : null;
             $nguon_phieu = isset($form['nguon_phieu']) ? $form['nguon_phieu'] : null ;
             $chi_tiet_nguon_phieu = isset($form['chi_tiet_nguon_phieu']) ? $form['chi_tiet_nguon_phieu'] : null ;
-            
+
             $form_custom_template = isset($form['form_custom_template']) && gettype($form['form_custom_template']) == 'array' ? json_encode($form['form_custom_template']) : null;
 
             if (!$title || !$name) {
@@ -1261,7 +1264,7 @@ class webManagerLib {
 
                     $newTicket['ticket_data_custom'] = json_encode($ticket);
                 }
-                            
+
 
                 self::wmReadForm($form_id, function ($err, $formData) use (&$newTicket) {
                     if (!$err && $formData) {
@@ -1306,15 +1309,15 @@ class webManagerLib {
                                 return $flag;
                             });
                             if (!$ticket_data_custom && !$form_custom_template && !$customTicketData) {
-                              
+
                             } else {
-                              foreach ($customTicketField as $o => $field) {
-                                $c = (array)$ticket_data_custom;
-                                if (isset($c[$field->name]) && !is_null($c[$field->name])) {
-                                  $extrasVal = $c[$field->name];
-                                  $ticketComment .= "<br> " . $field->label . " : " . $extrasVal ;
+                                foreach ($customTicketField as $o => $field) {
+                                    $c = (array)$ticket_data_custom;
+                                    if (isset($c[$field->name]) && !is_null($c[$field->name])) {
+                                        $extrasVal = $c[$field->name];
+                                        $ticketComment .= "<br> " . $field->label . " : " . $extrasVal ;
+                                    }
                                 }
-                              }
                             }
                             $options = array($title, $ticketComment, $email, $phone, $name, $caresoft_id,$nguon_phieu,$chi_tiet_nguon_phieu);
                             $ticketCareSoft = self::sendTicketToCareSoft($options);
@@ -1323,7 +1326,7 @@ class webManagerLib {
                                 // if not find ticketCarsoft
 
                             } else {
-                              $newTicket['caresoft_ticket'] = json_encode($ticketCareSoft);
+                                $newTicket['caresoft_ticket'] = json_encode($ticketCareSoft);
                             }
                         }
 
@@ -1403,9 +1406,9 @@ class webManagerLib {
             $agent = self::getAgentsAssignee();
             $custom_field = '{"id": "3406", "value": "41875"},{"id": "1448", "value": "'.$nguon_phieu.'"}';
             if ((int)$chi_tiet_nguon_phieu == 44119) {
-              $custom_field .= ',{"id": "1700", "value": "'.$chi_tiet_nguon_phieu.'"}';
+                $custom_field .= ',{"id": "1700", "value": "'.$chi_tiet_nguon_phieu.'"}';
             } else {
-              $custom_field .= ',{"id": "1416", "value": "'.$chi_tiet_nguon_phieu.'"}';  
+                $custom_field .= ',{"id": "1416", "value": "'.$chi_tiet_nguon_phieu.'"}';
             }
             // $custom_field = '{"id": "3406", "value": "41875"},{"id": "1448", "value": "'.$nguon_phieu.'"},{"id": "1416", "value": "'.$chi_tiet_nguon_phieu.'"}';
             $postStr = '{"ticket": {"ticket_subject": "'.$title.'","ticket_comment":  "'.$ticket_comment.'","email": "'.$email.'","phone": "'.$phone.'","username": "'.$username.'","ticket_priority": "Normal", "service_id" : "950022","assignee_id": "'.$agent.'","custom_fields": ['.$custom_field.']}}';
@@ -1427,7 +1430,7 @@ class webManagerLib {
 
         $careSoftAgents = null;
 
-		$urlGet = "https://api.caresoft.vn/tmvngocdung/api/v1/agents";
+        $urlGet = "https://api.caresoft.vn/tmvngocdung/api/v1/agents";
         $resultGet = self::getPostData($urlGet);
         $argsGet = json_decode($resultGet,true);
         $careSoftAgents = isset($argsGet["agents"]) && gettype($argsGet["agents"]) == "array" && count($argsGet["agents"]) > 0 ? $argsGet["agents"] : null;
