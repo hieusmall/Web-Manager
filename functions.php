@@ -450,26 +450,26 @@ class webManagerLib {
 
             // If request filter by form id
             if ($filterByFormIds) {
-              $ids = join("','", $filterByFormIds);
-              $query .= " form_id in ('$ids')";
+                $ids = join("','", $filterByFormIds);
+                $query .= " form_id in ('$ids')";
             }
             if ($hasCareSoftTicket && $filterByFormIds) {
-              $query .= ' and';
+                $query .= ' and';
             }
             if ($hasCareSoftTicket == 'yes') {
-              $query .= " caresoft_ticket is not null";
+                $query .= " caresoft_ticket is not null";
             }
             if ($hasCareSoftTicket == 'no') {
-              $query .= " caresoft_ticket is null";
+                $query .= " caresoft_ticket is null";
             }
             if ($sources) {
-              if ($hasCareSoftTicket || $filterByFormIds) {
-                $query .= " and";
-              }
-              foreach ($sources as $k => $source) {
-                if ($k > 0) : $query.= " or"; endif;
-                $query .= " detail like '%$source%'";
-              }
+                if ($hasCareSoftTicket || $filterByFormIds) {
+                    $query .= " and";
+                }
+                foreach ($sources as $k => $source) {
+                    if ($k > 0) : $query.= " or"; endif;
+                    $query .= " detail like '%$source%'";
+                }
             }
 
             if ($startdate || $enddate) {
@@ -520,9 +520,9 @@ class webManagerLib {
 
         $query .= " limit $length";
         if ($start > 0 && $start <= 10) {
-          $query .= " ,$start";
+            $query .= " ,$start";
         } else {
-          $query .= " offset $start";
+            $query .= " offset $start";
         }
 
         // If has filter action
@@ -579,28 +579,28 @@ class webManagerLib {
     }
 
     public static function ticketsDTableFilterSourceAPI() {
-      $request = $_GET;
-      $code = 400;
-      $res = array(
-        'success' => false
-      );
-      global $wpdb;
-      $tableName = $wpdb->prefix . self::TICKET_TABLE_NAME;
-      $query = "select detail from $tableName where detail is not null";
-      $details = $wpdb->get_results($query, OBJECT);
-      $filters = array_map(function($obj) {
-        $queryString = json_decode($obj->detail)->search;
-        return $queryString;
-      }, $details);
-      $filters = array_filter($filters, function($search) {
-        return $search;
-      });
-      $filters = array_values(array_unique($filters));
-      $res['success'] = true;
-      $res['data'] = $filters;
-      $code = 200;
-      wp_send_json($res, $code);
-      die();
+        $request = $_GET;
+        $code = 400;
+        $res = array(
+            'success' => false
+        );
+        global $wpdb;
+        $tableName = $wpdb->prefix . self::TICKET_TABLE_NAME;
+        $query = "select detail from $tableName where detail is not null";
+        $details = $wpdb->get_results($query, OBJECT);
+        $filters = array_map(function($obj) {
+            $queryString = json_decode($obj->detail)->search;
+            return $queryString;
+        }, $details);
+        $filters = array_filter($filters, function($search) {
+            return $search;
+        });
+        $filters = array_values(array_unique($filters));
+        $res['success'] = true;
+        $res['data'] = $filters;
+        $code = 200;
+        wp_send_json($res, $code);
+        die();
     }
 
     public static function ticketToCareSoftNowAPI() {
@@ -677,48 +677,48 @@ class webManagerLib {
         $sql = "select count(*) from $tableTicket where";
 
         if ($forms) {
-          foreach ($forms as $k => $form) {
-            $name = $form->name;
-            $form_id = $form->form_id;
-            // $sql .= " form_id = $form_id and created_at like";
+            foreach ($forms as $k => $form) {
+                $name = $form->name;
+                $form_id = $form->form_id;
+                // $sql .= " form_id = $form_id and created_at like";
+                $formChart = array(
+                    'name'=>$name,
+                    'data'=> []
+                );
+                foreach ($dates as $key => $date) {
+                    $created = self::dateTimeToYMD($date);
+                    $query = $sql . " form_id = $form_id and created_at like '%$created%'";
+                    $result = $wpdb->get_results($query, OBJECT);
+                    $result = (array)$result[0];
+                    $y = (int)$result['count(*)'];
+                    array_push($formChart['data'], (object)array(
+                        'x' => $date,
+                        'y' => $y
+                    ));
+                }
+
+                array_push($chartsData, $formChart);
+            }
+        } else {
+            $sql .= " created_at like";
             $formChart = array(
-                'name'=>$name,
+                'name'=> "Leads",
                 'data'=> []
             );
             foreach ($dates as $key => $date) {
                 $created = self::dateTimeToYMD($date);
-                $query = $sql . " form_id = $form_id and created_at like '%$created%'";
+                $query = $sql . " '%$created%'";
                 $result = $wpdb->get_results($query, OBJECT);
                 $result = (array)$result[0];
                 $y = (int)$result['count(*)'];
-                array_push($formChart['data'], (object)array(
-                  'x' => $date,
-                  'y' => $y
-                ));
+                array_push($formChart["data"], array(
+                        'x' => $date,
+                        'y' => $y
+                    )
+                );
             }
 
             array_push($chartsData, $formChart);
-          }
-        } else {
-          $sql .= " created_at like";
-          $formChart = array(
-              'name'=> "Leads",
-              'data'=> []
-          );
-          foreach ($dates as $key => $date) {
-            $created = self::dateTimeToYMD($date);
-            $query = $sql . " '%$created%'";
-            $result = $wpdb->get_results($query, OBJECT);
-            $result = (array)$result[0];
-            $y = (int)$result['count(*)'];
-            array_push($formChart["data"], array(
-                'x' => $date,
-                'y' => $y
-              )
-            );
-          }
-
-          array_push($chartsData, $formChart);
         }
 
         $code = 200;

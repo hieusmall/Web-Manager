@@ -101,7 +101,7 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
     </div>
 
 
-<!--    <button class="" type="button" data-toggle="modal" data-target="#detailLeadPopup">click vào đayaa</button>-->
+    <!--    <button class="" type="button" data-toggle="modal" data-target="#detailLeadPopup">click vào đayaa</button>-->
     <!-- Modal -->
     <div class="modal fade wmTicketDetailPopup" id="detailLeadPopup" tabindex="-1" role="dialog" aria-labelledby="detailLeadPopupLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
@@ -146,7 +146,7 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary wm-whiteframe-3dp" data-dismiss="modal">Quay Lại</button>
-<!--                    <button type="button" class="btn btn-primary">Lưu Lại</button>-->
+                    <!--                    <button type="button" class="btn btn-primary">Lưu Lại</button>-->
                 </div>
             </div>
         </div>

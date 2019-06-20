@@ -251,22 +251,20 @@
                 if (!err && success && data) {
                     data.forEach(function (search) {
                         var totalFilter = wmBags.queryStringToObj(search);
-                        /*Object.keys(totalFilter).filter((value, index, self)=>{
-                            return self.indexOf(value) === index;
-                        });*/
                         Object.keys(totalFilter).forEach(function(key) {
-                            // var value = totalFilter[key];
-                            // utmSourceItem[key] = value;
-                            if (!utmSourceItems.includes(key)) {
-                                utmSourceItems.push(key);
+                            if (key.includes("utm_") && !utmSourceItems.includes(key)) {
+                                var val = totalFilter[key];
+                                var filteritem = {value:key, text: val};
+                                utmSourceItems.push(filteritem);
                             }
-                        })
+                        });
                     });
 
-                    utmSourceItems.forEach(function(value) {
-                        options += `<option class="text-cappitalize" value="${value}">${value}</option>`;
+                    utmSourceItems.forEach(function(obj) {
+                        var {value, text} = obj;
+                        options += `<option class="text-cappitalize" value="${value}=${text}">${value}=${text}</option>`;
                     });
-             
+
                     var $ticketFilterByUTM = $filterWrapper.find("#ticketFilterByUTM");
                     $ticketFilterByUTM.html(options);
                     $ticketFilterByUTM.selectpicker({
@@ -713,10 +711,10 @@
                                         <span class="edit">
                                             <a class="updateFormItem" href="#" aria-label="Sửa “${title}”">Chỉnh sửa</a> | 
                                         </span>`+
-                                        // <span class="trash">
-                                        //     <a class="deleteFormItem" href="#" class="submitdelete" aria-label="Bỏ “${title}” vào thùng rác">Xóa</a> | 
-                                        // </span>
-                                    `</div>
+                    // <span class="trash">
+                    //     <a class="deleteFormItem" href="#" class="submitdelete" aria-label="Bỏ “${title}” vào thùng rác">Xóa</a> |
+                    // </span>
+                    `</div>
                                 </td>
                                 <td>${to_caresoft_now.toUpperCase()}</td>
                                 <td>${directional ? directional : "Không"}</td>
