@@ -64,8 +64,13 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                         name="form_id" id="ticketFilterByForm"></select>-->
                 <div class="row">
                     <div class="form-group col-md-3">
+                        <label for="ticketFilterByUTM">Nguồn</label>
+                        <select multiple class="form-control filterSelectpicker" name="sources" id="ticketFilterByUTM">
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3">
                         <label for="ticketFilterByForm">Form</label>
-                        <select multiple class="form-control filterSelectpicker" name="form_id[]" id="ticketFilterByForm"></select>
+                        <select multiple class="form-control filterSelectpicker" name="form_id" id="ticketFilterByForm"></select>
                     </div>
                     <div class="form-group col-md-3">
                         <label for="ticketFilterByCareSoftStt">Tình Trạng CareSoft</label>
@@ -90,6 +95,7 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
             </form>
 
             <table id="ticketDTable" class="ticketDTable table table-bordered wp-list-table widefat fixed striped">
+
             </table>
         </div>
     </div>

@@ -712,9 +712,9 @@ class webManagerLib {
             $result = (array)$result[0];
             $y = (int)$result['count(*)'];
             array_push($formChart["data"], array(
-                    'x' => $date,
-                    'y' => $y
-                )
+                'x' => $date,
+                'y' => $y
+              )
             );
           }
 
