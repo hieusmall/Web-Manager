@@ -207,7 +207,6 @@
                 selectAllText: "<span class='text-success'>Tất Cả</span>",
                 deselectAllText: "<span class='text-danger'>Hủy Chọn</span>",
                 noneSelectedText: "Tất Cả",
-                // showTick: true,
                 // actionsBox :true
             });
             $ticketFilterByCareSoft.on('change',function (e) {
@@ -242,6 +241,51 @@
                 }
             }, cb);
             cb(start, end);
+
+
+            // Filter by UTM Source
+            wmBags.jsonTransPortData({type: 'get',data: {action: "ticketsDTableFilterSource"}}, function (err, res) {
+                var utmSourceItems = [];
+                var {success, data} = typeof res == "object" ? res : {};
+                var options = "";
+                if (!err && success && data) {
+                    data.forEach(function (search) {
+                        var totalFilter = wmBags.queryStringToObj(search);
+                        /*Object.keys(totalFilter).filter((value, index, self)=>{
+                            return self.indexOf(value) === index;
+                        });*/
+                        Object.keys(totalFilter).forEach(function(key) {
+                            // var value = totalFilter[key];
+                            // utmSourceItem[key] = value;
+                            if (!utmSourceItems.includes(key)) {
+                                utmSourceItems.push(key);
+                            }
+                        })
+                    });
+
+                    utmSourceItems.forEach(function(value) {
+                        options += `<option class="text-cappitalize" value="${value}">${value}</option>`;
+                    });
+             
+                    var $ticketFilterByUTM = $filterWrapper.find("#ticketFilterByUTM");
+                    $ticketFilterByUTM.html(options);
+                    $ticketFilterByUTM.selectpicker({
+                        selectedTextFormat: 'count > 3',
+                        showTick: true,
+                        style: 'btn-light',
+                        selectAllText: "<span class='text-success'>Tất Cả</span>",
+                        deselectAllText: "<span class='text-danger'>Hủy Chọn</span>",
+                        noneSelectedText: "Tất Cả",
+                    })
+
+                    $ticketFilterByUTM.on('change',function (e) {
+                        e.preventDefault();
+                        $ticketDTable.draw();
+                    });
+                } else {
+                    console.log("Can't load source filter");
+                }
+            });
         }
         ticketLib.chartTicketsFilter = () => {
             var $filterWrapper = $('.cardTicketsChart').find("#filters_chart_ticket_wrapper");
@@ -433,9 +477,9 @@
                     'csvHtml5',
                     'pdfHtml5'
                 ],
-                paging: true,
-                pageLength: 10,
-                pagingType: "full_numbers",
+                // paging: true,
+                pageLength: 50,
+                // pagingType: "full_numbers",
                 columnDefs: [
                     {
                         targets: [0,1,2,3,4,5],
@@ -467,7 +511,8 @@
                             d.form_id = $("#ticketFilterByForm").val(),
                             d.caresoft_ticket = $("#ticketFilterByCareSoftStt").val(),
                             d.startdate = $("#ticketCreatedStartDate").val(),
-                            d.enddate = $("#ticketCreatedEndDate").val()
+                            d.enddate = $("#ticketCreatedEndDate").val(),
+                            d.sources = $("#ticketFilterByUTM").val()
                     }
                 },
                 columns: [
@@ -507,14 +552,13 @@
                         width: 150,
                         name: "caresoft_ticket", data: "caresoft_ticket", render: function (data, type, row) {
                             var caresoftTicket = data && typeof data == "object" ? data : {},
-                                {created_at, ticket_id} = caresoftTicket,
+                                {created_at, ticket_id, ticket_no} = caresoftTicket,
                                 careSoftSttHtml = `<div class="text-center">`;
-
                             if (created_at) {
                                 var time = created_at ? wmBags.dateTime(created_at).format('FULL') : "";
                                 careSoftSttHtml += `<div class="" data-toggle="tooltip" 
                                                         data-placement="bottom" title="Lúc : ${time}">
-                                                        <a style="text-decoration: none !important;" class="text-success" target="_blank" href="//web1.caresoft.vn/tmvngocdung#/index?type=ticket&id=${ticket_id}">
+                                                        <a style="text-decoration: none !important;" class="text-success" target="_blank" href="//web11.caresoft.vn/tmvngocdung#/index?type=ticket&id=${ticket_id}">
                                                             <span class="dashicons dashicons-yes"></span>
                                                             Đã Tạo Ticket
                                                         </a>
@@ -554,9 +598,30 @@
                                 formHtml = "";
                             if (name && title) {
                                 formHtml = `<a href="#" onclick="return false" class="">
-                                <span class="text-brand-blue">${title} - ${name}</span></a>`;
+                                <span class="text-brand-blue">${name}</span></a>`;
                             }
                             return formHtml;
+                        }
+                    },
+                    {
+                        title: `<div class="font-weight-bold text-center">Nguồn</div>`
+                        ,className: "text-left", name: "detail", data: "detail", render: function (detail, type, row) {
+                            var {search} = typeof detail == "object" && detail instanceof Object ? detail : {},
+                                tagsHtml = "";
+                            search = search && search.length > 0 ? search.substring(1) : false;
+                            var queryStringToObj = {}
+                            if (search) {
+                                queryStringToObj = JSON.parse('{"' + search.replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}');
+                            }
+                            var tags = Object.keys(queryStringToObj);
+                            tags.forEach(function(tagName) {
+                                var tagContent = queryStringToObj[tagName];
+                                tagsHtml += `<button type="button" class="btn btn-sm btn-success mr-1 mb-1" 
+                                data-toggle="tooltip" data-placement="bottom" title="Giá Trị : ${tagContent}">
+                                    ${tagName}
+                                </button>`;
+                            });
+                            return tagsHtml;
                         }
                     }
                 ],
@@ -586,9 +651,11 @@
                 initComplete : function (settings, json) {
                     var dTable = this,
                         table = dTable[0];
-                    ticketLib.ticketsFilter(table);
+                    // ticketLib.ticketsFilter(table);
                 }
             });
+        // Setup filter for data table
+        ticketLib.ticketsFilter($ticketTable[0]);
 
 
         // Ticket Charts
@@ -641,15 +708,15 @@
                                     </div>
                                 </th>
                                 <td>
-                                    <strong><a id="detailFormByTitleBtn" class="row-title" href="#" aria-label="${title}">${title}</a></strong>
+                                    <strong><a id="detailFormByTitleBtn" class="updateFormItem row-title" href="#" aria-label="${title}">${title}</a></strong>
                                     <div class="row-actions">
                                         <span class="edit">
                                             <a class="updateFormItem" href="#" aria-label="Sửa “${title}”">Chỉnh sửa</a> | 
-                                        </span>
-                                        <span class="trash">
-                                            <a class="deleteFormItem" href="#" class="submitdelete" aria-label="Bỏ “${title}” vào thùng rác">Xóa</a> | 
-                                        </span>
-                                    </div>
+                                        </span>`+
+                                        // <span class="trash">
+                                        //     <a class="deleteFormItem" href="#" class="submitdelete" aria-label="Bỏ “${title}” vào thùng rác">Xóa</a> | 
+                                        // </span>
+                                    `</div>
                                 </td>
                                 <td>${to_caresoft_now.toUpperCase()}</td>
                                 <td>${directional ? directional : "Không"}</td>
@@ -866,7 +933,9 @@
                         if (insertData) {
                             var {form_custom_template} = data;
                             form_custom_template = typeof form_custom_template == "object" && form_custom_template instanceof Array  ? form_custom_template : [];
-                            formBuilder.actions.setData(form_custom_template)
+                            setTimeout(()=>{
+                                formBuilder.actions.setData(form_custom_template);
+                            },500);
                         } else {
                             alert("Không thể thêm dữ liệu vào form");
                         }
@@ -1207,8 +1276,8 @@
         return false;
     }
 
-    wmBags.queryStringToObj = () => {
-        var search = location.search.substring(1);
+    wmBags.queryStringToObj = (str) => {
+        var search = !str ? location.search.substring(1) : str.substring(1);
         var x = JSON.parse('{"' + decodeURI(search).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}');
         return x;
     }
