@@ -60,6 +60,7 @@ class PageTemplate {
         // Add your templates to this array.
         $this->templates = array(
             'template-thankyou.php' => 'Page Thank You 1',
+            'template-video.php' => 'Page Template Video 1'
         );
 
         $this->webManagerLib = new webManagerLib;
