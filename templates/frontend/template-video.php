@@ -45,6 +45,7 @@ get_header();
                     nextArrow: $next,
                 });
             });
+
         })
     })(jQuery)
 </script>
