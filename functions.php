@@ -1745,21 +1745,6 @@ class webManagerLib {
             $display = 'inline-block';
         }
 
-        /*if ($hasValue) {
-            // $image_attributes[0] - image URL
-            // $image_attributes[1] - image width
-            // $image_attributes[2] - image height
-            $image_attributes = wp_get_attachment_image_src( $value, $image_size );
-            $image = '"><img src="' . $image_attributes[0] . '" style="display:block;margin-bottom:15px;" />';
-            $display = 'inline-block';
-
-            return '<div>
-                    <a href="#" class="wm_upload_image_button' . $image . '</a>
-                    <input type="hidden" name="' . $name . '" id="' . $name . '" value="' . $value . '" />
-                    <a href="#" class="wm_remove_image_button" style="display:inline-block;display:' . $display . '">Remove image</a>
-                </div>';
-        }*/
-
         return '<div>
                     <a href="#" class="wm_upload_image_button' . $image . '</a>
                     <input type="hidden" name="' . $name . '" id="' . $name . '" value="' . $value . '" />
@@ -1767,44 +1752,16 @@ class webManagerLib {
                 </div>';
     }
 
-    /*public static function checkTheStorage() {
-        if ( !function_exists( 'maybe_create_table' ) ) {
-            require_once ABSPATH . '/wp-admin/install-helper.php';
-        }
-        global $wpdb;
-        require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
-        // Database table name.
-        $tableFormName = array(
-            "name" => self::FORM_TABLE_NAME,
-            "sql" => ""
-        );
-        $tablePopupName = self::POPUP_TABLE_NAME;
-        $arr = array($tableFormName, $tablePopupName);
+    public static function ytVideoDetailById($video_id) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=$video_id&key=AIzaSyBF2LUcRgbbcYOk58oYmUdD52mwSDIlN2A");
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($ch);
+        curl_close($ch);
+        $response = json_decode($response);
+        return $response;
+    }
 
-        $response = array();
-
-        foreach ($arr as $tableName) {
-            $safe_table_name = "khachhang";
-            $tableName = $wpdb->prefix . $tableName;
-            // Tạo bảng nếu chưa có
-            $create_sql = "
-                CREATE TABLE IF NOT EXISTS $tableName (
-                  `id_form` bigint(20) NOT NULL AUTO_INCREMENT,
-                  `ho_ten` varchar(255) NOT NULL,
-                  `email` varchar(255) NOT NULL,
-                  `sodienthoai` int(15) NOT NULL,
-                  `loi_nhan` text NOT NULL,
-                  `dichvu` varchar(255) NULL,
-                  `tinh_trang` boolean NOT NULL,
-                  `thoi_gian` timestamp NOT NULL,
-                  PRIMARY KEY (`id_form`)
-                ) ENGINE = InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1
-              ";
-            dbDelta( $create_sql );
-        }
-
-        // Create database table SQL.
-        $create_ddl = '';
-    }*/
 }
