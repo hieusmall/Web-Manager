@@ -36,7 +36,7 @@ get_header();
                     speed: 500,
                     slidesToShow: 1,
                     centerMode: true,
-                    autoplay: true,
+                    autoplay: false,
                     variableWidth: true,
                     centerPadding: "20px",
                     focusOnSelect: true,
@@ -45,20 +45,6 @@ get_header();
                     nextArrow: $next,
                 });
             });
-
-            $(".fancybox-thumb").fancybox({
-                prevEffect	: 'none',
-                nextEffect	: 'none',
-                helpers	: {
-                    title	: {
-                        type: 'outside'
-                    },
-                    thumbs	: {
-                        width	: 50,
-                        height	: 50
-                    }
-                }
-            });
         })
     })(jQuery)
 </script>
@@ -66,7 +52,7 @@ get_header();
 
 <div class="wm-page-wrapper wm-wrapper wm-video-wrapper">
     <div class="page-title">
-        <img src="//localhost/ngocdung/beta.thammyvienngocdung.com/wp-content/uploads/2019/06/page-pic1.jpg" alt="">
+        <img src="//beta.thammyvienngocdung.com/wp-content/uploads/2019/05/phan-hoi-desktop.jpg" alt="">
         <div class="wm-container">
             <h1><span><?php echo $videoCategory->name ?></span></h1>
         </div>
@@ -74,7 +60,7 @@ get_header();
     <div class="page-content">
         <div class="wm-container">
             <?php $videosFeature = new WP_Query(array(
-                'category_id' => $videoCategory->term_id,
+                'cat' => $videoCategory->term_id,
                 'post_status' => "publish",
                 "posts_per_page" => 4,
                 'order' => 'DESC',
@@ -129,7 +115,7 @@ get_header();
                 $categoryName = $category->name;
                 $categoryId = $category->cat_ID;
                 $videosDieuTriDa = new WP_Query(array(
-                    'category_id' => $categoryId,
+                    'cat' => $categoryId,
                     'post_status' => "publish",
                     "posts_per_page" => 10,
                     'order' => 'DESC',
