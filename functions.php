@@ -20,12 +20,13 @@ class webManagerLib {
     const FORM_TABLE_NAME = 'wm_form';
     const POPUP_TABLE_NAME = 'wm_popup';
     const TICKET_TABLE_NAME = 'wm_ticket';
+    const YOUTUBE_TABLE_NAME = 'wm_youtube_v3';
     const CS_ANGENT_TABLE_NAME = 'wm_cs_agent';
 
     const BACKEND_TEMPLATE = 'templates/backend/';
     const FRONTEND_TEMPLATE = 'templates/frontend/';
     const PLUGIN_PATH = WM_PLUGIN_PATH;
-    const PLUGIN_NAME = 'Web-Manager';
+    const PLUGIN_NAME = WM_PLUGIN_NAME;
     const ASSET = 'assets/';
     const BACKEND_ASSET = self::ASSET . 'backend/';
     const FRONTEND_ASSET = self::ASSET . 'frontend/';
@@ -280,6 +281,10 @@ class webManagerLib {
 //        wp_enqueue_script(self::ID . 'popper_app', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/popper.min.js', array('jquery'), self::VERSION, true);
         wp_enqueue_script(self::ID . 'bootstrap_app', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/js/bootstrap.min.js', array('jquery'), self::VERSION, true);
         wp_enqueue_script(self::ID . 'main_app', plugin_dir_url(__FILE__) . self::FRONTEND_ASSET . 'js/wm_app.js', array('jquery'), self::VERSION, true);
+        wp_localize_script(self::ID . 'main_app', 'wmGlobal', array(
+            'pluginsUrl' => plugins_url() . "/" . self::PLUGIN_NAME,
+            'vendorAssets' => plugins_url() . "/" . self::PLUGIN_NAME . "/" . self::VENDOR_ASSET
+        ));
     }
 
     public static function admin_menu() {
@@ -426,7 +431,7 @@ class webManagerLib {
         $dataTables = $request;
         // Check some data data table
         if (isset($dataTables['action'])) unset($dataTables['action']);
-        list($draw, $columns, $order, $start, $length, $search, $form_id, $caresoft_ticket, $startdate, $enddate, $sources) = array_values($dataTables);
+        list($draw, $columns, $order, $start, $length, $search, $form_id, $caresoft_ticket, $startdate, $enddate, $utm_source, $post_id) = array_values($dataTables);
 
         $order = is_array($order) && count($order) > 0 ? $order : false;
         $search = is_array($search) && count($search) > 0 && isset($search['value']) && trim(strlen($search['value'])) > 0 ? $search : false;
@@ -435,8 +440,10 @@ class webManagerLib {
         $hasCareSoftTicket = isset($caresoft_ticket) && !is_null($caresoft_ticket) ? $caresoft_ticket : false;
         $startdate = isset($startdate) && !is_null($startdate) && $startdate ? self::dateTimeToYMD($startdate) : false;
         $enddate = isset($enddate) && !is_null($enddate) && $enddate ? self::dateTimeToYMD($enddate) : false;
-        $sources = isset($sources) && is_array($sources) ? $sources : false;
-        $isFilter = $filterByFormIds || $hasCareSoftTicket || $startdate || $enddate ? true : false;
+        $utm_source = isset($utm_source) && is_array($utm_source) ? $utm_source : false;
+        $post_id = isset($post_id) && is_array($post_id) ? $post_id : false;
+
+        $isFilter = $filterByFormIds || $hasCareSoftTicket || $utm_source || $post_id || $startdate || $enddate ? true : false;
 
         global $wpdb;
         $tableTicket = $wpdb->prefix . self::TICKET_TABLE_NAME;
@@ -462,21 +469,32 @@ class webManagerLib {
             if ($hasCareSoftTicket == 'no') {
                 $query .= " caresoft_ticket is null";
             }
-            if ($sources) {
+            if ($utm_source) {
                 if ($hasCareSoftTicket || $filterByFormIds) {
                     $query .= " and";
                 }
-                foreach ($sources as $k => $source) {
+                $query .= " (";
+                foreach ($utm_source as $k => $source) {
                     if ($k > 0) : $query.= " or"; endif;
-                    $query .= " detail like '%$source%'";
+                    $query .= " sources like '%utm_source=$source%'";
                 }
+                $query .= " )";
+            }
+
+            if ($post_id) {
+                if ($hasCareSoftTicket || $filterByFormIds || $utm_source) {
+                    $query .= " and";
+                }
+                $postIds = join("','",$post_id);
+                $query .= " post_id in ('$postIds')";
             }
 
             if ($startdate || $enddate) {
-                if ($filterByFormIds || $hasCareSoftTicket || $sources) $query .= " and";
+                if ($filterByFormIds || $hasCareSoftTicket || $utm_source || $post_id) $query .= " and";
                 if ($startdate && $enddate) {
                     if ($startdate != $enddate) {
-                        $query .= " created_at between '$startdate' and '$enddate'";
+                        $enddateTomorrow = date('Y-m-d',strtotime($enddate . "+1 days"));
+                        $query .= " created_at between '$startdate' and '$enddateTomorrow'";
                     } else {
                         $query .= " created_at like '%$startdate%'";
                     }
@@ -487,6 +505,7 @@ class webManagerLib {
                 }
             }
         }
+
 
         $queryTotalFiltered = str_replace("*", "count(*) as total_filter", $query);
         $recordsFiltered = $wpdb->get_results( $queryTotalFiltered, OBJECT );
@@ -545,6 +564,16 @@ class webManagerLib {
                 $ticket_data = !is_null($obj->ticket_data) ? json_decode($obj->ticket_data) : null;
                 $ticket_data_custom = !is_null($obj->ticket_data_custom) ? json_decode($obj->ticket_data_custom) : null;
                 $caresoft_ticket = !is_null($obj->caresoft_ticket) ? json_decode($obj->caresoft_ticket) : null;
+                $sources = !is_null($obj->sources) ? $obj->sources : null;
+                $post = !is_null($obj->post_id) ? get_post($obj->post_id) : null;
+                if ($post) {
+                    $post->post_url =  esc_url( get_permalink( $obj->post_id ) );
+                }
+
+
+                if ($sources) {
+                    parse_str($obj->sources, $sources);
+                }
 
                 $form = null;
                 self::wmReadForm($form_id, function ($err , $formData) use (&$form) {
@@ -558,6 +587,8 @@ class webManagerLib {
                 $obj->ticket_data = $ticket_data;
                 $obj->ticket_data_custom = $ticket_data_custom;
                 $obj->caresoft_ticket = $caresoft_ticket;
+                $obj->sources = $sources;
+                $obj->post = $post;
                 return $obj;
             }, $data);
             $json_data["data"] = $data;
@@ -601,6 +632,92 @@ class webManagerLib {
         $code = 200;
         wp_send_json($res, $code);
         die();
+    }
+
+    public static function ticketDataTableFormFilter() {
+        global $wpdb;
+        $tableName = $wpdb->prefix . self::TICKET_TABLE_NAME;
+        $query = "select distinct form_id from $tableName where form_id is not null";
+        $formIds = $wpdb->get_results($query, OBJECT);
+        $options = "";
+
+        foreach ($formIds as $obj) {
+            $formId = $obj->form_id;
+            self::wmReadForm($formId, function ($err, $formData) use (&$options) {
+                if (!$err && $formData) {
+                    $options .= "<option value='$formData->form_id'>$formData->name</option>";
+                }
+            });
+        }
+
+        $formFilterHtml = '<div class="form-group col-md-3">
+            <label for="ticketFilterByForm">Từ Form</label>
+            <select multiple class="form-control filterSelectpicker" name="form_id" id="ticketFilterByForm">
+                '.$options.'
+            </select>
+        </div>';
+
+        return $formFilterHtml;
+    }
+
+    public static function ticketdataTableCareSoftFilter() {
+
+        $options = '<option value="">--Care Soft--</option>
+                        <option value="yes">Đã Tạo Ticket</option>
+                        <option value="no">Chưa Có Thông Tin</option>';
+
+        $careSoftFilter = '<div class="form-group col-md-3">
+                        <label for="ticketFilterByCareSoftStt">Tình Trạng CareSoft</label>
+                        <select class="form-control filterSelectpicker" name="caresoft_ticket" id="ticketFilterByCareSoftStt">'.$options.'</select>
+                    </div>';
+
+        return $careSoftFilter;
+    }
+
+    public static function ticketDataTablePostFilter() {
+        global $wpdb;
+        $tableName = $wpdb->prefix . self::TICKET_TABLE_NAME;
+        $query = "select distinct post_id from $tableName where post_id is not null";
+        $postIds = $wpdb->get_results($query, OBJECT);
+        $options = "";
+        foreach ($postIds as $obj) {
+            $postData = get_post($obj->post_id);
+            $options .= "<option value='$obj->post_id'>$postData->post_title</option>";
+        }
+
+        $postFilterHtml = '<div class="form-group col-md-3">
+            <label for="ticketFilterByPost">Nguồn Từ Page</label>
+            <select multiple class="form-control filterSelectpicker" name="post_id" id="ticketFilterByPost">
+            '.$options.'
+            </select>
+        </div>';
+
+        return $postFilterHtml;
+    }
+
+    public static function ticketDataTableUtmSourceFilter() {
+        global $wpdb;
+        $tableName = $wpdb->prefix . self::TICKET_TABLE_NAME;
+        $query = "select sources from $tableName where sources is not null and sources like '%utm_source%'";
+        $sourcesType = $wpdb->get_results($query, OBJECT);
+
+        $utmSourcesData = array_map(function ($obj) {
+            parse_str($obj->sources, $sources);
+            $obj->sources = $sources;
+            return $sources["utm_source"];
+        }, $sourcesType);
+        $options = "";
+        foreach ($utmSourcesData as $val) {
+            $options .= "<option value='$val'>$val</option>";
+        }
+
+        $sourcesFilterHtml = '<div class="form-group col-md-3">
+            <label for="ticketFilterByUtmSource">UTM Source</label>
+            <select multiple class="form-control filterSelectpicker" name="utm_source" id="ticketFilterByUtmSource">
+                '.$options.'
+            </select>
+        </div>';
+        return $sourcesFilterHtml;
     }
 
     public static function ticketToCareSoftNowAPI() {
@@ -1083,30 +1200,33 @@ class webManagerLib {
         if (!$form) {
             wp_send_json_error('Missing required field', 401);
         } else {
-            $title = isset($form['title']) && is_string($form['title']) && strlen($form['title']) > 0 ? $form['title'] : false;
+            $title = isset($form['title']) && is_string($form['title']) && strlen($form['title']) > 0 ? $form['title'] : null;
             $name = isset($form['name']) && is_string($form['name']) && strlen($form['name']) > 0 ? $form['name'] : false;
             $directional = isset($form['directional']) && is_string($form['directional']) ? $form['directional'] : null;
             $to_caresoft_now = isset($form['to_caresoft_now']) && in_array($form['to_caresoft_now'], ['on','off']) ? $form['to_caresoft_now'] : 'off' ;
             $caresoft_id = isset($form['caresoft_id']) && in_array(gettype($form['caresoft_id']), ['number', 'string']) && strlen((string)$form['caresoft_id']) == 5 ? $form['caresoft_id'] : null;
-            $nguon_phieu = isset($form['nguon_phieu']) ? $form['nguon_phieu'] : null ;
-            $chi_tiet_nguon_phieu = isset($form['chi_tiet_nguon_phieu']) ? $form['chi_tiet_nguon_phieu'] : null ;
+            $nguon_phieu = isset($form['nguon_phieu']) && (int)$form['nguon_phieu'] ? $form['nguon_phieu'] : null ;
+            $chi_tiet_nguon_phieu = isset($form['chi_tiet_nguon_phieu']) && $form['chi_tiet_nguon_phieu'] ? $form['chi_tiet_nguon_phieu'] : null ;
+            $time =  self::dateTimeNow();
 
             $form_custom_template = isset($form['form_custom_template']) && gettype($form['form_custom_template']) == 'array' ? json_encode($form['form_custom_template']) : null;
 
-            if (!$title || !$name) {
+            if (!$name) {
                 wp_send_json_error('Missing required field', 402);
             }else if($to_caresoft_now == 'on' && (is_null($nguon_phieu) || is_null($chi_tiet_nguon_phieu))){
                 wp_send_json_error('Missing required field', 402);
             }else {
                 $newForm = array(
-                    'title' => $title,
                     'name' => $name,
+                    'title' => $title,
                     'directional' => $directional,
                     'to_caresoft_now' => $to_caresoft_now,
                     'caresoft_id' => $caresoft_id,
                     'nguon_phieu' => $nguon_phieu,
                     'chi_tiet_nguon_phieu' => $chi_tiet_nguon_phieu,
-                    'form_custom_template' => $form_custom_template
+                    'form_custom_template' => $form_custom_template,
+                    'created_at' => $time,
+                    'updated_at' => $time
                 );
 
                 self::wmNewForm($newForm, function ($err) {
@@ -1136,8 +1256,8 @@ class webManagerLib {
                 $form['to_caresoft_now'] = isset($form['to_caresoft_now']) && in_array($form['to_caresoft_now'], ['on','off']) ? $form['to_caresoft_now'] : null;
                 $form['directional'] = isset($form['directional']) && gettype($form['directional']) == "string" && strlen($form['directional']) > 0 ? $form['directional'] : null;
                 $form['caresoft_id'] = isset($form['caresoft_id']) && (int)$form['caresoft_id'] > 0 && strlen((string)$form['caresoft_id']) == 5 ? $form['caresoft_id'] : null;
-                $form['nguon_phieu'] = isset($form['nguon_phieu']) ? $form['nguon_phieu'] : null ;
-                $form['chi_tiet_nguon_phieu'] = isset($form['chi_tiet_nguon_phieu']) ? $form['chi_tiet_nguon_phieu'] : null ;
+                $form['nguon_phieu'] = isset($form['nguon_phieu']) && (int)$form['nguon_phieu'] ? $form['nguon_phieu'] : null ;
+                $form['chi_tiet_nguon_phieu'] = isset($form['chi_tiet_nguon_phieu']) && (int)$form['chi_tiet_nguon_phieu'] ? $form['chi_tiet_nguon_phieu'] : null ;
                 $form['form_custom_template'] = isset($form['form_custom_template']) && gettype($form['form_custom_template']) == 'array' ? json_encode($form['form_custom_template']) : null;
 
                 self::wmUpdateForm($form_id, $form, function ($err) {
@@ -1286,38 +1406,46 @@ class webManagerLib {
                     $newTicket['ticket_data_custom'] = json_encode($ticket);
                 }
 
-
                 self::wmReadForm($form_id, function ($err, $formData) use (&$newTicket) {
                     if (!$err && $formData) {
                         // Insert new ticket to database
                         global $wpdb;
                         $ticketTable = $wpdb->prefix . self::TICKET_TABLE_NAME;
+                        $ticketDetail = isset($newTicket['detail']) && !is_null($newTicket['detail']) ? json_decode($newTicket['detail']) : false;
+
+                        // Get id of page register
+                        $pageUrl = $ticketDetail->origin . $ticketDetail->pathname;
+                        $post_id = url_to_postid($pageUrl);
+                        $postDetail = get_post($post_id);
+                        $newTicket["post_id"] = $post_id && $postDetail ? $post_id : null;
+
+                        $email = $newTicket['email'] ? $newTicket['email'] : null;
+                        $name = $newTicket['name'];
+                        $phone = $newTicket['phone'];
+
+                        $sources = isset($ticketDetail->search) && gettype($ticketDetail->search) == "string" && strlen($ticketDetail->search) > 0 ? substr($ticketDetail->search, 1, strlen($ticketDetail->search)) : false;
+                        $newTicket['sources'] = $sources ? $sources : null;
 
                         // Check and Send data to CareSoft
                         $checkToCareSoftNow = $formData->to_caresoft_now == self::TO_CARESOFT_NOW_ON;
                         if ($checkToCareSoftNow) {
-                            $ticketDetail = isset($newTicket['detail']) && !is_null($newTicket['detail']) ? json_decode($newTicket['detail']) : false;
                             $title = "";
-                            $title .= $formData->title . ' - ' . $newTicket['name'];
+                            $title .= $formData->title . ' - ' . $name;
                             $ticketComment = "";
-                            $email = $newTicket['email'] ? $newTicket['email'] : null;
-                            $name = $newTicket['name'];
-                            $phone = $newTicket['phone'];
-                            $service = isset($newTicket['service']) && strlen($newTicket['service']) > 0 ? $newTicket['service'] : false;
                             $caresoft_id = isset($formData->caresoft_id) ? $formData->caresoft_id : null;
                             $nguon_phieu = isset($formData->nguon_phieu) ? $formData->nguon_phieu : null ;
                             $chi_tiet_nguon_phieu = isset($formData->chi_tiet_nguon_phieu) ? $formData->chi_tiet_nguon_phieu : null ;
                             // Optimize api title and comment
                             $ticketComment .= "<br> <b style='color:firebrick'>Chi Tiết Đăng Kí</b>";
                             $ticketComment .= '<br> Link bài viết : '. $ticketDetail->href;
-                            $postTitle = $ticketDetail && isset($ticketDetail->postTitle) && !is_null($ticketDetail->postTitle) ? $ticketDetail->postTitle : false;
+                            $postTitle = $postDetail && isset($postDetail->post_title) ? $postDetail->post_title : false;
                             if ($postTitle) {
                                 $title .= ' - ' . $postTitle;
-                                $ticketComment .= '<br> Tiêu Đề Page : ' . $postTitle;
+                                $ticketComment .= '<br> Đăng Ký Tại Page : ' . $postTitle;
                             }
                             $note = $newTicket['note'] ? $newTicket['note'] : false;
                             if ($note) {
-                                $ticketComment .= "<br> Lời nhắn của khách hàng";
+                                $ticketComment .= "<br> Lời nhắn của khách hàng : " . $note;
                             }
 
                             $ticket_data_custom = isset($newTicket['ticket_data_custom']) && !is_null($newTicket['ticket_data_custom']) ? json_decode($newTicket['ticket_data_custom']) : false;
@@ -1329,7 +1457,7 @@ class webManagerLib {
                                 $flag = $hasDefaultName && $isButton;
                                 return $flag;
                             });
-                            if (!$ticket_data_custom && !$form_custom_template && !$customTicketData) {
+                            if (!$ticket_data_custom && !$form_custom_template && !$customTicketField) {
 
                             } else {
                                 foreach ($customTicketField as $o => $field) {
@@ -1344,7 +1472,7 @@ class webManagerLib {
                             $ticketCareSoft = self::sendTicketToCareSoft($options);
                             // If can't send to caresoft
                             if (!$ticketCareSoft) {
-                                // if not find ticketCarsoft
+                                // if send fail ticketCaresoft
 
                             } else {
                                 $newTicket['caresoft_ticket'] = json_encode($ticketCareSoft);
@@ -1755,14 +1883,61 @@ class webManagerLib {
 
     public static function ytVideoDetailById($video_id) {
         $ch = curl_init();
-        // curl_setopt($ch, CURLOPT_URL, "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=$video_id&key=AIzaSyBF2LUcRgbbcYOk58oYmUdD52mwSDIlN2A");
-        curl_setopt($ch, CURLOPT_URL, "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=$video_id&key=AIzaSyBeh4tilZ1vbt9biWijEqjE-DXS3LfcFvc");
+         curl_setopt($ch, CURLOPT_URL, "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=$video_id&key=AIzaSyBF2LUcRgbbcYOk58oYmUdD52mwSDIlN2A");
+//        curl_setopt($ch, CURLOPT_URL, "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=$video_id&key=AIzaSyBeh4tilZ1vbt9biWijEqjE-DXS3LfcFvc");
         curl_setopt($ch, CURLOPT_HEADER, 0);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $response = curl_exec($ch);
         curl_close($ch);
         $response = json_decode($response);
         return $response;
+    }
+
+    public static function wmReadYoutubeVideo($video_id) {
+        $video_id = gettype($video_id) == "string" && strlen($video_id) && strlen($video_id) < 100 ? $video_id : false;
+        if (!$video_id) {
+            return "missing video id";
+        }
+
+        global $wpdb;
+        $youtubeTable = $wpdb->prefix . self::YOUTUBE_TABLE_NAME;
+        $video = $wpdb->get_row("select * from $youtubeTable where youtube_id = '$video_id'", OBJECT);
+        if (!$video) {
+            $createNewVideo = self::wmNewYoutubeVideo($video_id);
+            if (!$createNewVideo) return "Cannot create new video";
+            $video = $wpdb->get_row("select * from $youtubeTable where youtube_id = '$video_id'", OBJECT);
+        }
+        if (isset($video->details) && !is_null($video->details)) {
+            $video->details = json_decode($video->details);
+        }
+        return $video;
+    }
+
+    public static function wmNewYoutubeVideo($video_id) {
+        $video_id = gettype($video_id) == "string" && strlen($video_id) && strlen($video_id) < 100 ? $video_id : false;
+
+        if (!$video_id) {
+            return "missing video id";
+        }
+
+        global $wpdb;
+        $time =  self::dateTimeNow();
+        $youtubeTable = $wpdb->prefix . self::YOUTUBE_TABLE_NAME;
+
+        $details = self::ytVideoDetailById($video_id);
+        $successAPI = isset($details->items) && count($details->items) ? $details->items : false;
+        if ($successAPI) {
+            $details = json_encode($details);
+        }
+        $youtubeVidArr = array(
+            "youtube_id" => $video_id,
+            "details" => $details,
+            "updated_at" => $time,
+            "created_at" => $time
+        );
+
+        $result = $wpdb->insert($youtubeTable, $youtubeVidArr);
+        return $result;
     }
 
 

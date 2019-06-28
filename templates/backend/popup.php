@@ -53,7 +53,7 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                     $popup_id = $popup->popup_id;
                     $title = $popup->title;
                     $tdTitle = '<td>
-                                <strong><a id="detailPopupByTitleBtn" class="row-title" href="#" aria-label="'.$title.'">'.$title.'</a></strong>
+                                <strong><a id="detailPopupByTitleBtn" class="row-title" href="'.$pluginPageUrl.'&currentPage=popupUpdate&popup_id='.$popup_id.'" aria-label="'.$title.'">'.$title.'</a></strong>
                                 <div class="row-actions">
                                     <span class="edit">
                                         <a class="updatePopupItem" href="'.$pluginPageUrl.'&currentPage=popupUpdate&popup_id='.$popup_id.'" aria-label="Sửa “'.$title.'”">Chỉnh sửa</a> |

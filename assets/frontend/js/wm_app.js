@@ -1,7 +1,8 @@
 (function($){
     // Define the client;
-    var client = {};
-
+    var client = {},
+    pageVideo = {},
+    web = {};
 
     client.lead = false;
 
@@ -358,6 +359,54 @@
     }
 
 
+    // Setting the videos page
+    pageVideo.assets = () => {
+        var {vendorAssets} = wmGlobal;
+        if (vendorAssets) {
+            // Stylesheets
+            loadFile(vendorAssets+"slick/slick.css", 'css');
+            loadFile(vendorAssets+"fancybox/dist/jquery.fancybox.min.css", 'css');
+
+            // Scripts
+            loadFile(vendorAssets+"slick/slick.min.js", 'js');
+            loadFile(vendorAssets+"fancybox/dist/jquery.fancybox.min.js", 'js');
+        } else {
+            console.log("Không tìm thấy đường dẫn plugin !");
+        }
+    }
+    pageVideo.init = () => {
+        if (window.location.pathname.includes("videos") || window.location.pathname.includes("video")) {
+            pageVideo.assets();
+
+            $("#Subheader").hide();
+            var $videosWrapSlides = $(".wrap-videos-cat");
+            $videosWrapSlides.each(function (i, elem) {
+                var $wrap = $(elem);
+                var $slideBox = $wrap.find(".card-videos-wrap");
+                var boxItems = $slideBox.find(".box-item");
+                var $prev = $wrap.find(".prev");
+                var $next = $wrap.find(".next");
+                /*if (boxItems.length < 4) {
+                    return false;
+                }*/
+                $slideBox.slick({
+                    // dots: true,
+                    infinite: true,
+                    speed: 500,
+                    slidesToShow: 1,
+                    centerMode: true,
+                    autoplay: false,
+                    variableWidth: true,
+                    centerPadding: "20px",
+                    focusOnSelect: true,
+                    mobileFirst: true,
+                    prevArrow: $prev,
+                    nextArrow: $next,
+                });
+            });
+        }
+    }
+
     /**
      * @function init
      */
@@ -367,10 +416,21 @@
         window.client = client;
     }
 
+
+    var loadFile = (path, type) => {
+        if( type == 'js') {
+            $('head').append('<script type="text/javascript" src="'+path+'"></script>');
+        }
+        else if( type == 'css' ) {
+            $('head').append('<link href="'+path+'" rel="stylesheet" type="text/css">');
+        }
+    }
+
     /**
      * When the page is ready
      */
     $(document).ready(function () {
         client.init();
+        pageVideo.init();
     })
 })(jQuery);

@@ -15,6 +15,8 @@ define ( 'WM_VERSION', '1.0' );
 define ( 'BACKEND_ASSETS', 'assets/backend');
 define ( 'FRONTEND_ASSETS', 'frontend/backend');
 define ( 'TEXT_DOMAIN', 'webManager');
+define ( 'WM_PLUGIN_NAME', 'Web-Manager');
+
 defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
 date_default_timezone_set("Asia/Ho_Chi_Minh");
 

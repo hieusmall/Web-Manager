@@ -24,9 +24,10 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                         </td>
                         <th scope="col" id="title" class="manage-column column-title column-primary sortable">
                             <a href="#">
-                                <span>Tiêu đề</span><span class="sorting-indicator"></span>
+                                <span>Tên Form</span><span class="sorting-indicator"></span>
                             </a>
                         </th>
+                        <th scope="col" id="toCareSoftNow" class="manage-column column-toCareSoftNow">Tiêu đề CareSoft</th>
                         <th scope="col" id="toCareSoftNow" class="manage-column column-toCareSoftNow">To CareSoft Now</th>
                         <th scope="col" id="directional" class="manage-column column-directional">Chuyển Hướng</th>
                         <th scope="col" id="date" class="manage-column column-date sortable asc">

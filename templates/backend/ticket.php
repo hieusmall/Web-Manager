@@ -3,6 +3,7 @@ $formPages = ["ticketList","ticketUpdate","ticketNew"];
 $formPage = isset($_GET['currentPage']) && strlen($_GET['currentPage']) > 0 && in_array($_GET['currentPage'] , $formPages) ? $_GET['currentPage'] : "formList";
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
 $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webManagerForm";
+
 ?>
 <span display="none" id="pluginPageUrl" data-plugin-page-url="<?php echo $pluginPageUrl ?>"></span>
 <span display="none" id="adminAjaxUrl" data-admix-ajax-url="<?php echo admin_url( 'admin-ajax.php' ); ?>"></span>
@@ -60,43 +61,24 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
         <div class="ticketTableWrapper mt-5 table-responsive">
             <!-- Ticket form filter -->
             <form class="mb-5" id="filters_ticket_wrapper">
-                <!--<select class="selectpicker" multiple data-selected-text-format="count > 3"
-                        name="form_id" id="ticketFilterByForm"></select>-->
                 <div class="row">
+                    <?php echo webManagerLib::ticketDataTableUtmSourceFilter(); ?>
+                    <?php echo webManagerLib::ticketDataTableFormFilter(); ?>
+                    <?php echo webManagerLib::ticketdataTableCareSoftFilter(); ?>
                     <div class="form-group col-md-3">
-                        <label for="ticketFilterByUTM">Nguồn</label>
-                        <select multiple class="form-control filterSelectpicker" name="sources" id="ticketFilterByUTM">
-                        </select>
-                    </div>
-                    <div class="form-group col-md-3">
-                        <label for="ticketFilterByForm">Form</label>
-                        <select multiple class="form-control filterSelectpicker" name="form_id" id="ticketFilterByForm"></select>
-                    </div>
-                    <div class="form-group col-md-3">
-                        <label for="ticketFilterByCareSoftStt">Tình Trạng CareSoft</label>
-                        <select class="form-control filterSelectpicker" name="caresoft_ticket" id="ticketFilterByCareSoftStt"></select>
-                    </div>
-                    <!--<div class="form-group col-md-3">
-                        <label for="ticketFilterByCreated">Ngày Đăng Ký</label>
-                        <select class="form-control" name="created_at" id="ticketFilterByCreated"></select>
-                    </div>-->
-                    <div class="form-group">
                         <label for="ticketFilterByDateRange">Ngày Đăng Kí</label>
-                        <!--  <input type="text" class="form-control" id="chartFilterByDateRange" placeholder="Ngày" hidden>-->
                         <input type="hidden" class="form-control" id="ticketCreatedStartDate" name="startdate">
                         <input type="hidden" class="form-control" id="ticketCreatedEndDate" name="enddate">
-                        <div id="ticketFilterByDateRange" style="background: #fff; cursor: pointer;
-                    padding: 5px 10px; border: 1px solid #ccc; width: 100%">
+                        <div id="ticketFilterByDateRange" class="btn btn-light" style="cursor: pointer; width: 100%">
                             <i class="fa fa-calendar"></i>
                             <span></span> <i class="fa fa-caret-down"></i>
                         </div>
                     </div>
+                    <?php echo webManagerLib::ticketDataTablePostFilter(); ?>
                 </div>
             </form>
 
-            <table id="ticketDTable" class="ticketDTable table table-bordered wp-list-table widefat fixed striped">
-
-            </table>
+            <table id="ticketDTable" class="ticketDTable table table-bordered wp-list-table widefat fixed striped"></table>
         </div>
     </div>
 
