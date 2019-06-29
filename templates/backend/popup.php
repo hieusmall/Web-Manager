@@ -34,6 +34,12 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                         <span class="sorting-indicator"></span>
                     </a>
                 </th>
+                <th scope="col" id="created_at" class="manage-column column-created_at sortable asc">
+                    <a href="#">
+                        <span class="">Button</span>
+                        <span class="sorting-indicator"></span>
+                    </a>
+                </th>
                 <th scope="col" id="shortCode" class="manage-column column-shortCode">
                     <a href="#">
                         <strong>ShortCode</strong>
@@ -84,6 +90,9 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                         $tdDelay_show_time = '<td class="delayShowTime column-delay_show_time" data-colname="Delay Show">
                                                 <a href="#">'.$delay_show_time.' Giây</a>
                                             </td>';
+
+                    $button = '<td class=""><code>data-toggle="modal" data-target="#'.webManagerLib::stringToSlug($title).'"</code></td>';
+
                     $created_at = webManagerLib::dateTimeToYMD($popup->created_at);
                     $tdCreated_at = '<td class="delayShowTime column-delay_show_time" data-colname="Delay Show">
                                         <span>'.$created_at.'</span>
@@ -101,7 +110,7 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                                     <span class="screen-reader-text">“'.$title.'” đã bị khóa</span>
                                 </div>
                             </th>
-                            '. $tdTitle . $tdForm . $tdDelay_show_time . $tdCreated_at . $tdShortCode .'
+                            '. $tdTitle . $tdForm . $tdDelay_show_time . $tdCreated_at . $button . $tdShortCode .'
                         </tr>';
 
                     echo $tr;

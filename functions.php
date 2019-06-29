@@ -1884,7 +1884,7 @@ class webManagerLib {
 
     public static function ytVideoDetailById($video_id) {
         $ch = curl_init();
-         curl_setopt($ch, CURLOPT_URL, "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=$video_id&key=AIzaSyBF2LUcRgbbcYOk58oYmUdD52mwSDIlN2A");
+        curl_setopt($ch, CURLOPT_URL, "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=$video_id&key=AIzaSyBF2LUcRgbbcYOk58oYmUdD52mwSDIlN2A");
 //        curl_setopt($ch, CURLOPT_URL, "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=$video_id&key=AIzaSyBeh4tilZ1vbt9biWijEqjE-DXS3LfcFvc");
         curl_setopt($ch, CURLOPT_HEADER, 0);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
