@@ -4077,13 +4077,18 @@ input[type="button"].btn-block {
     text-transform: capitalize;
 }
 
-.wm-form .form-group .btnSubmit {
+.wm-form .form-group .btnSubmit,
+.wm-form .form-group button[type=submit] {
     /*margin-bottom: 0px;
     background: #001850;
     color: darkgoldenrod;
     font-weight: 700;*/
     width: 100%;
     text-transform: uppercase;
+    background-color: #dcaf26 !important;
+    border: none;
+    outline: none;
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
 }
 
 .text-left {

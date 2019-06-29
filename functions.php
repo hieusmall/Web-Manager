@@ -1443,10 +1443,10 @@ class webManagerLib {
                                 $title .= ' - ' . $postTitle;
                                 $ticketComment .= '<br> Đăng Ký Tại Page : ' . $postTitle;
                             }
-                            $note = $newTicket['note'] ? $newTicket['note'] : false;
+                            /*$note = $newTicket['note'] ? $newTicket['note'] : false;
                             if ($note) {
                                 $ticketComment .= "<br> Lời nhắn của khách hàng : " . $note;
-                            }
+                            }*/
 
                             $ticket_data_custom = isset($newTicket['ticket_data_custom']) && !is_null($newTicket['ticket_data_custom']) ? json_decode($newTicket['ticket_data_custom']) : false;
                             $form_custom_template = isset($formData->form_custom_template) && !is_null($formData->form_custom_template) ? $formData->form_custom_template : false;
@@ -1468,6 +1468,7 @@ class webManagerLib {
                                     }
                                 }
                             }
+
                             $options = array($title, $ticketComment, $email, $phone, $name, $caresoft_id,$nguon_phieu,$chi_tiet_nguon_phieu);
                             $ticketCareSoft = self::sendTicketToCareSoft($options);
                             // If can't send to caresoft
