@@ -4084,7 +4084,7 @@ input[type="button"].btn-block {
     color: darkgoldenrod;
     font-weight: 700;*/
     width: 100%;
-    text-transform: uppercase;
+    text-transform: uppercase !important;
     background-color: #dcaf26 !important;
     border: none;
     outline: none;
