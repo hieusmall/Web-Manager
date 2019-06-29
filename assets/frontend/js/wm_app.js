@@ -394,7 +394,6 @@
                     infinite: true,
                     speed: 500,
                     slidesToShow: 1,
-                    centerMode: true,
                     autoplay: false,
                     variableWidth: true,
                     centerPadding: "20px",

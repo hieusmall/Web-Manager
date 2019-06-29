@@ -4143,6 +4143,10 @@ input[type="button"].btn-block {
 /**
  * WM_POPUP
  */
+body.modal-open {
+    padding-right: 0px !important;
+}
+
 .wm-popup .close-popup {
     position: absolute;
     top: -2%;
@@ -4478,10 +4482,11 @@ input[type="button"].btn-block {
 }
 
 .wrap-videos-cat .box-item.slick-slide {
-    margin: 0 10px ;
+    /*margin: 0 10px ;*/
     display: block;
     width: 100%;
     height: 100%;
+    margin-right: 10px;
 }
 
 .wrap-videos-cat .box-item.slick-slide a.video-box-detail {

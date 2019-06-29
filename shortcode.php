@@ -63,7 +63,11 @@ function blogList($atts) {
                         $youtubeVideo = gettype($youtubeVideo) == "object" && $youtubeVideo ? $youtubeVideo : false;
                         if ($youtubeVideo) {
                             $youtubeVideo = $youtubeVideo->details->items[0];
-                            $imageDieuTriDaURL = $youtubeVideo->snippet->thumbnails->high->url;
+                            $imageDieuTriDaURL = $youtubeVideo->snippet->thumbnails->standard->url;
+                            if ($imageDieuTriDaURL) {
+                                $imageDieuTriDaURL = $youtubeVideo->snippet->thumbnails->high->url;
+                                if ($imageDieuTriDaURL) $imageDieuTriDaURL = $youtubeVideo->snippet->thumbnails->medium->url;
+                            }
                         }
                     }
 
@@ -103,7 +107,11 @@ function blogList($atts) {
                         $youtubeVideo = webManagerLib::wmReadYoutubeVideo($ytVideoId);
                         if ($youtubeVideo) {
                             $youtubeVideo = $youtubeVideo->details->items[0];
-                            $imageFeatureVideo = $isBig ? $youtubeVideo->snippet->thumbnails->maxres->url : $youtubeVideo->snippet->thumbnails->high->url;
+//                            $imageFeatureVideo = $isBig ? $youtubeVideo->snippet->thumbnails->maxres->url : $youtubeVideo->snippet->thumbnails->high->url;
+                            $imageFeatureVideo = $youtubeVideo->snippet->thumbnails->maxres->url;
+                            if ($imageFeatureVideo) $imageFeatureVideo = $youtubeVideo->snippet->thumbnails->standard->url;
+                            if ($imageFeatureVideo) $imageFeatureVideo = $youtubeVideo->snippet->thumbnails->high->url;
+                            if ($imageFeatureVideo) $imageFeatureVideo = $youtubeVideo->snippet->thumbnails->medium->url;
                         }
                     }
                     if ($isBig) {
@@ -172,6 +180,7 @@ function blogList($atts) {
                             $youtubeVideo = $youtubeVideo->details->items[0];
                             $imageDieuTriDaURL = $youtubeVideo->snippet->thumbnails->standard->url;
                             if ($imageDieuTriDaURL) $youtubeVideo->snippet->thumbnails->high->url;
+                            if ($imageDieuTriDaURL) $youtubeVideo->snippet->thumbnails->medium->url;
                         }
                     }
 
