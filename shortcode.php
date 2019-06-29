@@ -1,18 +1,18 @@
 <?php
 
 function blogList($atts) {
-	// Defaults
-   	extract(shortcode_atts(array(
-      	"chuyenmuc" => false,
+    // Defaults
+    extract(shortcode_atts(array(
+        "chuyenmuc" => false,
         "so_luong" => 3,
         "chuyenmuc_lienquan" => false,
         "kieu_block" => "slide"
-   	), $atts));
+    ), $atts));
 
-   	// de-funkify query
-   	$so_luong = $so_luong ? $so_luong : 10;
+    // de-funkify query
+    $so_luong = $so_luong ? $so_luong : 10;
     $kieu_block = $kieu_block && in_array($kieu_block, ["slide","feature"]) ? $kieu_block : "slide";
-   	
+
     $query = array(
         "order" => "DESC",
         "orderby" => "date",
@@ -22,8 +22,8 @@ function blogList($atts) {
 
     $videoCategory = false;
     if (!$chuyenmuc) {
-   		return "Không tìm thấy tên chuyên mục";
-   	} elseif ((int)$chuyenmuc) {
+        return "Không tìm thấy tên chuyên mục";
+    } elseif ((int)$chuyenmuc) {
         if ($chuyenmuc) $query["cat"] = $chuyenmuc;
         $videoCategory = get_category( $chuyenmuc );
     } else if (gettype($chuyenmuc) == "string") {
@@ -34,11 +34,11 @@ function blogList($atts) {
     }
 
     $childrenVideoCategories = get_categories(array("parent" => $videoCategory->term_id));
-	$html = "";
+    $html = "";
 
-	// query is made
+    // query is made
     $videosFeature = new WP_Query($query);
-   	// the loop
+    // the loop
 
     switch ($kieu_block) {
         case "slide" :
@@ -64,10 +64,8 @@ function blogList($atts) {
                         if ($youtubeVideo) {
                             $youtubeVideo = $youtubeVideo->details->items[0];
                             $imageDieuTriDaURL = $youtubeVideo->snippet->thumbnails->standard->url;
-                            if ($imageDieuTriDaURL) {
-                                $imageDieuTriDaURL = $youtubeVideo->snippet->thumbnails->high->url;
-                                if ($imageDieuTriDaURL) $imageDieuTriDaURL = $youtubeVideo->snippet->thumbnails->medium->url;
-                            }
+                            if (!$imageDieuTriDaURL) $imageDieuTriDaURL = $youtubeVideo->snippet->thumbnails->high->url;
+                            if (!$imageDieuTriDaURL) $imageDieuTriDaURL = $youtubeVideo->snippet->thumbnails->medium->url;
                         }
                     }
 
@@ -88,7 +86,7 @@ function blogList($atts) {
             </div>';
                 wp_reset_query();
             endif;
-        break;
+            break;
         case "feature" :
             $k = 0;
             if ($videosFeature->have_posts()) :
@@ -110,8 +108,8 @@ function blogList($atts) {
 //                            $imageFeatureVideo = $isBig ? $youtubeVideo->snippet->thumbnails->maxres->url : $youtubeVideo->snippet->thumbnails->high->url;
                             $imageFeatureVideo = $youtubeVideo->snippet->thumbnails->maxres->url;
                             if ($imageFeatureVideo) $imageFeatureVideo = $youtubeVideo->snippet->thumbnails->standard->url;
-                            if ($imageFeatureVideo) $imageFeatureVideo = $youtubeVideo->snippet->thumbnails->high->url;
-                            if ($imageFeatureVideo) $imageFeatureVideo = $youtubeVideo->snippet->thumbnails->medium->url;
+                            if (!$imageFeatureVideo) $imageFeatureVideo = $youtubeVideo->snippet->thumbnails->high->url;
+                            if (!$imageFeatureVideo) $imageFeatureVideo = $youtubeVideo->snippet->thumbnails->medium->url;
                         }
                     }
                     if ($isBig) {
@@ -123,7 +121,7 @@ function blogList($atts) {
                     $html .= '<div class="'.$classBoxItem.' box-item">
                         <div class="box-thumbnail">
                             <a class="" data-fancybox href="'.$videoFeatureURL.'">
-                                <span style="background-image: url("'.$imageFeatureVideo.'");"></span>
+                                <span style="background-image: url('.$imageFeatureVideo.');"></span>
                             </a>
                         </div>
                         <div class="box-content">
@@ -144,10 +142,10 @@ function blogList($atts) {
                 $html .= '</div>';
                 wp_reset_query();
             endif;
-        break;
+            break;
     }
 
-   	// the loop
+    // the loop
     if ($chuyenmuc_lienquan) {
         foreach ($childrenVideoCategories as $category) :
             $categoryName = $category->name;
@@ -179,8 +177,8 @@ function blogList($atts) {
                         if ($youtubeVideo) {
                             $youtubeVideo = $youtubeVideo->details->items[0];
                             $imageDieuTriDaURL = $youtubeVideo->snippet->thumbnails->standard->url;
-                            if ($imageDieuTriDaURL) $youtubeVideo->snippet->thumbnails->high->url;
-                            if ($imageDieuTriDaURL) $youtubeVideo->snippet->thumbnails->medium->url;
+                            if (!$imageDieuTriDaURL) $youtubeVideo->snippet->thumbnails->high->url;
+                            if (!$imageDieuTriDaURL) $youtubeVideo->snippet->thumbnails->medium->url;
                         }
                     }
 
@@ -204,7 +202,7 @@ function blogList($atts) {
         endforeach;
     }
 
-	return $html;
+    return $html;
 }
 add_shortcode("blogList", "blogList");
 
