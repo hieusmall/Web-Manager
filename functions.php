@@ -1112,6 +1112,7 @@ class webManagerLib {
             if ($result) {
                 $form = $result[0];
                 $form->form_custom_template = isset($form->form_custom_template) && !is_null($form->form_custom_template) ? json_decode($form->form_custom_template) : null;
+                $form->caresoft_setting = isset($form->caresoft_setting) && !is_null($form->caresoft_setting) ? json_decode($form->caresoft_setting) : null;
             }
             if (!$form) {
                 $callback("Cannot get this form", null);
@@ -1132,10 +1133,10 @@ class webManagerLib {
             global $wpdb;
             $tableName =  $wpdb->prefix . self::FORM_TABLE_NAME;
             $result = $wpdb->update($tableName, $formData, array('form_id' => $form_id));
-            if (!$result) {
-                $callback("Cannot update this form");
-            } else {
+            if ($result) {
                 $callback(false);
+            } else {
+                $callback("Cannot update this form");
             }
         }
     }
@@ -1205,11 +1206,12 @@ class webManagerLib {
             $directional = isset($form['directional']) && is_string($form['directional']) ? $form['directional'] : null;
             $to_caresoft_now = isset($form['to_caresoft_now']) && in_array($form['to_caresoft_now'], ['on','off']) ? $form['to_caresoft_now'] : 'off' ;
             $caresoft_id = isset($form['caresoft_id']) && in_array(gettype($form['caresoft_id']), ['number', 'string']) && strlen((string)$form['caresoft_id']) == 5 ? $form['caresoft_id'] : null;
-            $nguon_phieu = isset($form['nguon_phieu']) && (int)$form['nguon_phieu'] ? $form['nguon_phieu'] : null ;
-            $chi_tiet_nguon_phieu = isset($form['chi_tiet_nguon_phieu']) && $form['chi_tiet_nguon_phieu'] ? $form['chi_tiet_nguon_phieu'] : null ;
+            $nguon_phieu = isset($form['nguon_phieu']) && (int)$form['nguon_phieu'] ? (int)$form['nguon_phieu'] : null ;
+            $chi_tiet_nguon_phieu = isset($form['chi_tiet_nguon_phieu']) && (int)$form['chi_tiet_nguon_phieu'] ? (int)$form['chi_tiet_nguon_phieu'] : null ;
             $time =  self::dateTimeNow();
 
             $form_custom_template = isset($form['form_custom_template']) && gettype($form['form_custom_template']) == 'array' ? json_encode($form['form_custom_template']) : null;
+            $caresoft_setting = isset($form['caresoft_setting']) && in_array(gettype($form['caresoft_setting']), ["array","object"])  ? json_encode($form['caresoft_setting']) : null;
 
             if (!$name) {
                 wp_send_json_error('Missing required field', 402);
@@ -1225,6 +1227,7 @@ class webManagerLib {
                     'nguon_phieu' => $nguon_phieu,
                     'chi_tiet_nguon_phieu' => $chi_tiet_nguon_phieu,
                     'form_custom_template' => $form_custom_template,
+                    'caresoft_setting' => $caresoft_setting,
                     'created_at' => $time,
                     'updated_at' => $time
                 );
@@ -1259,6 +1262,7 @@ class webManagerLib {
                 $form['nguon_phieu'] = isset($form['nguon_phieu']) && (int)$form['nguon_phieu'] ? $form['nguon_phieu'] : null ;
                 $form['chi_tiet_nguon_phieu'] = isset($form['chi_tiet_nguon_phieu']) && (int)$form['chi_tiet_nguon_phieu'] ? $form['chi_tiet_nguon_phieu'] : null ;
                 $form['form_custom_template'] = isset($form['form_custom_template']) && gettype($form['form_custom_template']) == 'array' ? json_encode($form['form_custom_template']) : null;
+                $form['caresoft_setting'] = isset($form['caresoft_setting']) && in_array(gettype($form['caresoft_setting']), ["array","object"]) ? json_encode($form['caresoft_setting']) : null;
 
                 self::wmUpdateForm($form_id, $form, function ($err) {
                     if (!$err) {
@@ -1379,8 +1383,8 @@ class webManagerLib {
             $detail = isset($ticket['detail']) && gettype($ticket['detail']) == 'array' && count($ticket['detail']) > 0 ? $ticket['detail'] : false;
             $form_id = isset($ticket['form_id']) && !is_null($ticket['form_id']) && (int)$ticket['form_id'] > 0 ? (int)$ticket['form_id'] : false;
             $formCustom = isset($ticket['formCustom']) && $ticket['formCustom'] == true ? true : false;
+            $referer = isset($ticket['referer']) && is_array($ticket['referer']) ? $ticket['referer'] : false;
             $time =  self::dateTimeNow();
-
 
             /**
              * With Ticket data
@@ -1394,9 +1398,12 @@ class webManagerLib {
                     'updated_at' => $time,
                     'form_id' => $form_id
                 );
+
                 if ($email) $newTicket['email'] = $email;
                 if ($note) $newTicket['note'] = $note;
                 if ($detail) $newTicket['detail'] = json_encode($detail);
+                if ($referer) $newTicket['referer'] = json_encode($referer);
+
                 if ($formCustom) {
                     $ticketCustomData = $ticket;
                     unset($ticketCustomData["formCustom"]);
@@ -1422,19 +1429,41 @@ class webManagerLib {
                         $email = $newTicket['email'] ? $newTicket['email'] : null;
                         $name = $newTicket['name'];
                         $phone = $newTicket['phone'];
+                        $referer = $newTicket['referer'] ? json_decode($newTicket['referer']) : false;
 
                         $sources = isset($ticketDetail->search) && gettype($ticketDetail->search) == "string" && strlen($ticketDetail->search) > 0 ? substr($ticketDetail->search, 1, strlen($ticketDetail->search)) : false;
+
                         $newTicket['sources'] = $sources ? $sources : null;
 
                         // Check and Send data to CareSoft
                         $checkToCareSoftNow = $formData->to_caresoft_now == self::TO_CARESOFT_NOW_ON;
+
                         if ($checkToCareSoftNow) {
                             $title = "";
                             $title .= $formData->title . ' - ' . $name;
                             $ticketComment = "";
                             $caresoft_id = isset($formData->caresoft_id) ? $formData->caresoft_id : null;
-                            $nguon_phieu = isset($formData->nguon_phieu) ? $formData->nguon_phieu : null ;
-                            $chi_tiet_nguon_phieu = isset($formData->chi_tiet_nguon_phieu) ? $formData->chi_tiet_nguon_phieu : null ;
+                            $nguon_phieu = isset($formData->nguon_phieu) ? $formData->nguon_phieu : null;
+                            $chi_tiet_nguon_phieu = isset($formData->chi_tiet_nguon_phieu) ? $formData->chi_tiet_nguon_phieu : null;
+                            $caresoftSetting = !is_null($formData->caresoft_setting) ? $formData->caresoft_setting : false;
+                            $hasKey = array_key_exists("utm_source", self::queryToArray($sources));
+
+                            $utm_source = false;
+                            if ($referer && array_key_exists("utm_source", (array)$referer)) {
+                                $utm_source = strtolower($referer->utm_source);
+                            } elseif ($caresoftSetting && $sources && $hasKey) {
+                                $utm_source = strtolower(self::queryToArray($sources)["utm_source"]);
+                            }
+                            if ($utm_source) {
+                                $x = array_filter($caresoftSetting, function($obj) use (&$utm_source) {
+                                    $flag = strtolower($obj->utm_source) == $utm_source;
+                                    return $flag;
+                                });
+                                $source = $x[key((array)$x)];
+                                $nguon_phieu = $source->nguon_phieu;
+                                $chi_tiet_nguon_phieu = $source->chi_tiet_nguon_phieu;
+                            }
+
                             // Optimize api title and comment
                             $ticketComment .= "<br> <b style='color:firebrick'>Chi Tiết Đăng Kí</b>";
                             $ticketComment .= '<br> Link bài viết : '. $ticketDetail->href;

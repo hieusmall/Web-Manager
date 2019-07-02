@@ -857,6 +857,8 @@
     }
 
     wmBags.formNewPage = () => {
+        wmBags._forms.SettingCaresoft().start();
+
         // setup fb-editor
         var $formEditor = $("fb-editor");
         $formEditor.html("");
@@ -928,21 +930,16 @@
         var $form = $("#formNewItem");
         $form.on('submit', function (e) {
             e.preventDefault(e);
-            var formData = {};
+            var formData = {},
+                form = this;
             var $inputs = $form.find(':input');
-            $inputs.each(function (i, field) {
-                var $field = $(field);
-                var {name, type, disabled, value} = field;
-                if (['submit', 'button'].includes(type)) return;
-                if (name) {
-                    formData[name] = $field.val();
-                }
-            });
 
+            formData = wmBags._forms.getDataInForm(form);
             var customFormTemplate = formBuilder.actions.getData();
             formData.form_custom_template = customFormTemplate;
 
             var a = Object.keys(formData).length > 0 ? true : false;
+
             if (a) {
                 var options = {
                     type: 'post',
@@ -964,16 +961,11 @@
                 alert("Rỗng");
             }
         })
-
-        // Back to List Form
-        /*var $backToListFormBtn = $('#backToListFormBtn');
-        $backToListFormBtn.on('click', function (e) {
-            e.preventDefault(e);
-            wmBags.getViewHtml('formList');
-        });*/
     };
 
     wmBags.formUpdatePage = () => {
+        wmBags._forms.SettingCaresoft().start();
+
         // setup fb-editor
         var $formEditor = $("#fb-editor");
         $formEditor.html("");
@@ -1010,11 +1002,18 @@
                     if (!err && success && data) {
                         var insertData = wmBags.insertDataToForm(form, data);
                         if (insertData) {
-                            var {form_custom_template} = data;
+                            var {form_custom_template, caresoft_setting} = data;
                             form_custom_template = typeof form_custom_template == "object" && form_custom_template instanceof Array  ? form_custom_template : [];
                             setTimeout(()=>{
                                 formBuilder.actions.setData(form_custom_template);
                             },500);
+                            if (caresoft_setting) {
+                                caresoft_setting.forEach(function (source) {
+                                    var {utm_source, nguon_phieu, chi_tiet_nguon_phieu} = source;
+                                    var sourceItem = wmBags._forms.SettingCaresoft().conditionItem(utm_source, nguon_phieu, chi_tiet_nguon_phieu);
+                                    $(".advanced_setting_caresoft_wrap").append(sourceItem);
+                                });
+                            }
                         } else {
                             alert("Không thể thêm dữ liệu vào form");
                         }
@@ -1025,8 +1024,9 @@
 
                 $form.on("submit", function (e) {
                     e.preventDefault(e);
-                    var formData = {};
-                    $inputs.each(function (i, field) {
+                    var form = this,
+                        formData = {};
+                    /*$inputs.each(function (i, field) {
                         var {name, type, disabled, value} = field;
 
                         if (["button", "submit"].includes(type) || disabled) {
@@ -1036,7 +1036,9 @@
                         if (name && value) {
                             formData[name] = $(field).val();
                         }
-                    });
+                    });*/
+
+                    formData = wmBags._forms.getDataInForm(form);
 
                     var customFormTemplate = formBuilder.actions.getData();
                     formData.form_custom_template = customFormTemplate;
@@ -1048,6 +1050,7 @@
                             form : formData
                         }
                     };
+
                     wmBags.jsonTransPortData(options, function (err, res) {
                         var {success, data} = typeof res == "object" ? res : {};
                         if (!err && success && data) {
@@ -1063,6 +1066,130 @@
             }
         }
         return false;
+    }
+
+    wmBags._forms = {};
+
+    wmBags._forms.careSoftSourcesDetail = {
+        nguonPhieu: [
+            {id:41890,name:"182 - Quảng cáo"},
+            {id:41893,name:"188 - Social"},
+            {id:41896,name:"173 - SEO"},
+            {id:41899,name:"179 - Đối tác"},
+            {id:41902,name:"176 - Offline"},
+            {id:41905,name:"186 - CSKH"},
+            {id:42106,name:"175 - Hotline"},
+            {id:42109,name:"174 - Livechat"},
+            {id:42178,name:"187 - TVOL"}
+        ],
+        chiTietNguonPhieu: [
+            {id:42112,name:"Chưa phân loại"},
+            {id:42115,name:"MB"},
+            {id:42118,name:"MT"},
+            {id:42121,name:"MN"},
+            {id:42124,name:"HCM"},
+            {id:41920,name:"SEO 1"},
+            {id:41923,name:"SEO 2"},
+            {id:41926,name:"Criteo"},
+            {id:41929,name:"T04"},
+            {id:41932,name:"T05"},
+            {id:41935,name:"T06"},
+            {id:42490,name:"T07"},
+            {id:44116,name:"KOLS"},
+            {id:44119,name:"Khác"}
+        ]
+    }
+
+    wmBags._forms.SettingCaresoft = () => {
+        var $advancedSettingSourceWrap = $(".advanced_setting_caresoft_wrap"),
+        $moreSetting = $("#addCondition");
+        var a = {};
+        a.conditionItem = (_utm, _source, _detailSource) =>{
+            var nguonPhieuOptions = "<option value=\"\"> Bỏ Qua </option>",
+            chiTietNguonPhieuOptions = "<option value=\"\">Bỏ Qua</option>",
+            {nguonPhieu, chiTietNguonPhieu} = wmBags._forms.careSoftSourcesDetail;
+
+            _utm = typeof _utm == "string" && _utm.length ? _utm : "";
+            _source = typeof _source == "string" && _source.length ? _source : false;
+            _detailSource = typeof _detailSource == "string" && _detailSource.length ? _detailSource : false ;
+
+            nguonPhieu.forEach(function ({id, name}) {
+                nguonPhieuOptions += `<option value="${id}"`;
+                if (_source == id) {
+                    nguonPhieuOptions += ` selected `;
+                }
+                nguonPhieuOptions += `>${name}</option>`;
+            });
+            var nguonPhieuSelect = `<select class="advancedTicketSource" name="nguon_phieu">${nguonPhieuOptions}</select>`;
+
+            chiTietNguonPhieu.forEach(function ({id, name}) {
+                chiTietNguonPhieuOptions += `<option value="${id}"`;
+                if (_detailSource == id) {
+                    chiTietNguonPhieuOptions += ` selected `;
+                }
+                chiTietNguonPhieuOptions += `>${name}</option>`;
+            });
+            var chiTietNguonPhieuSelect = `<select class="advancedTicketSource" name="chi_tiet_nguon_phieu">${chiTietNguonPhieuOptions}</select>`;
+            var sourceItem = `<fieldset class="item">
+                <legend class="screen-reader-text"><span>CareSoft Detail Fields</span></legend>
+                <label for="" class="mr-2">
+                    Nếu <b>utm_source=</b>
+                    <input name="utm_source" placeholder="( trống )" type="text" id="" value="${_utm}" class="advancedTicketSource">
+                </label>
+                <label for="" class="mr-2">
+                    Thì Nguồn Phiếu =
+                    ${nguonPhieuSelect}
+                </label>
+                <label for="">
+                    Chi Tiết Nguồn Phiếu =
+                    ${chiTietNguonPhieuSelect}
+                </label>
+            </fieldset>`;
+
+            return sourceItem;
+        };
+        a.start = () => {
+            $moreSetting.on('click', function(e) {
+                e.preventDefault(e);
+                $advancedSettingSourceWrap.append(a.conditionItem());
+            });
+        }
+
+        return a;
+    }
+
+    wmBags._forms.getDataInForm = (form) => {
+        form = form && $(form).prop("tagName").toLowerCase() == "form" ? form : false;
+        if (!form) return false;
+        var $form = $(form),
+            $fields = $form.find(":input"),
+            formData = {},
+            $careSoftWrap = $form.find(".advanced_setting_caresoft_wrap"),
+            caresoft_setting = [];
+
+        $fields.each(function (count, field) {
+            var {name, value, type, disabled, hidden, checked} = field,
+                $field = $(field);
+
+            // Continue if
+            if (["submit","button"].includes(type) || !name || disabled || $field.hasClass('advancedTicketSource')) return;
+            formData[name] = $field.val();
+        });
+
+        $careSoftWrap.find('.item').each(function (i, item) {
+            var obj = {};
+            $(item).find(":input").each(function (i, field) {
+                var {name, value, type, disabled, hidden, checked} = field,
+                    $field = $(field);
+                // Continue if
+                if (["submit","button"].includes(type) || !name || disabled) return;
+                obj[name] = $field.val();
+            });
+            caresoft_setting.push(obj);
+        });
+        formData.caresoft_setting = caresoft_setting;
+
+        return formData;
     }
 
     wmBags.popupListPage = () => {

@@ -214,6 +214,14 @@
                     <span class="sr-only">Đang gửi!...</span>`);
                 $submitBtn.attr('disabled', true);
 
+
+                var {referer, started} = traffic.getInfoTraffic() ? traffic.getInfoTraffic() : {},
+                isToday = new Date().toDateString() === new Date(started).toDateString();
+                if (referer && started) {
+                    if (isToday) {
+                        ticket.referer = referer;
+                    }
+                }
                 var $fields = $f.find(":input");
                 $fields.each(function (i, field) {
                     // when The Loop done
@@ -236,7 +244,7 @@
                         if (['button','submit'].includes(input.type))
                             return;
 
-                        if (['text','number','textarea','email'].includes(input.type))
+                        if (['text','tel','number','textarea','email'].includes(input.type))
                             $(input).val("");
 
                     });
@@ -358,6 +366,14 @@
         return metaDetails;
     }
 
+    client.queryStringToObj = (str) => {
+        if(!str) {
+            return {};
+        }
+//         var search = !str ? location.search.substring(1) : str.substring(1);
+        var x = JSON.parse('{"' + decodeURI(str.substring(1)).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}');
+        return x;
+    }
 
     // Setting the videos page
     pageVideo.assets = () => {
@@ -416,6 +432,72 @@
     }
 
 
+    var traffic = {};
+
+    traffic.getInfoTraffic = () => {
+        var t = localStorage.getItem("wm_traffic_info");
+        t = t && typeof t == "string" ? t : false;
+        try {
+            t = JSON.parse(t);
+            return t;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    traffic.setInfoTraffic = (data) => {
+        var {ref_begin, started} = typeof data == "object" ? data : {},
+        pagesViewed = [],
+        ver = "v1";
+        ref_begin = ref_begin ? ref_begin : window.location.search.substr(1, window.location.search.length);
+        started = started ? started : Date.now();
+        var trafficObj = {
+            referer: client.queryStringToObj(window.location.search),
+            ref_begin: ref_begin,
+            started : started,
+            pagesViewed : pagesViewed,
+            ver : ver
+        },
+        trafficStr = JSON.stringify(trafficObj);
+        localStorage.setItem("wm_traffic_info", trafficStr);
+        return true;
+    }
+
+    traffic.updateInfoTraffic = (data) => {
+        data = typeof data == "object" ? data : {};
+        var trafficDetail = traffic.getInfoTraffic(),
+        {pageViewed} = data;
+
+        pageViewed = typeof pageViewed == "object" && pageViewed instanceof Object ? pageViewed : false;
+        var count = trafficDetail.pagesViewed.length,
+        key = count + 1;
+        if (pageViewed) {
+            var {time, url} = pageViewed;
+            time = typeof time == "number" && time > 0 ? time : false;
+            url = typeof url == "string" && url.length ? url : false;
+            trafficDetail.pagesViewed[count] = pageViewed;
+            localStorage.setItem("wm_traffic_info", trafficDetail);
+        }
+
+        return trafficDetail;
+    }
+
+    traffic.setupTracking = () => {
+        var trafficDetail = traffic.getInfoTraffic();
+        var isNewTraffic = trafficDetail && typeof trafficDetail == "object" ? false : true;
+        if (isNewTraffic) {
+            traffic.setInfoTraffic();
+        } else if (trafficDetail && new Date(trafficDetail.started).toDateString() < new Date().toDateString()) {
+            traffic.setInfoTraffic();
+        }
+    }
+
+    traffic.init = () => {
+        traffic.setupTracking();
+        window.traffic = traffic;
+    }
+
+
     var loadFile = (path, type) => {
         if( type == 'js') {
             $('head').append('<script type="text/javascript" src="'+path+'"></script>');
@@ -430,6 +512,7 @@
      */
     $(document).ready(function () {
         client.init();
+        traffic.init();
         pageVideo.init();
     })
 })(jQuery);

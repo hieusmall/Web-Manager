@@ -63,20 +63,13 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
         <div class="wmAdminWrap wrap" data-page-active="<?php echo $formPage ?>">
             <h1 class="wp-heading-inline"><?php echo $pageDataDetail[$formPage]['heading']; ?></h1>
             <a href="<?php echo $pluginPageUrl . '&currentPage=formList' ?>" id="backToListFormBtn" class="page-title-action">Quay Lại Danh Sách</a>
-            <form id="<?php echo $pageDataDetail[$formPage]['formId']; ?>" method="post" action="">
+            <form id="<?php echo $pageDataDetail[$formPage]['formId']; ?>" class="webManagerForm" method="post" action="">
                 <input type="hidden" name="form_id" value="">
                 <table id="" class="form-table">
                     <tr>
                         <th><span>Tên Form</span></th>
                         <td>
-                            <input name="name" type="text" value="" class="regular-text" placeholder="">
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><span>Tiêu đề CareSoft</span></th>
-                        <td>
-                            <input name="title" type="text" value="" class="regular-text" placeholder="VD: SEO - Chiến dịch xyz">
-                            <p class="description">Cấu Trúc Tiêu Đề CareSoft : Tiêu Đề - Tên Khách Hàng - URL Bài Viết.</p>
+                            <input name="name" type="text" value="" placeholder="Nhập tên form" class="regular-text" placeholder="">
                         </td>
                     </tr>
                     <tr>
@@ -99,9 +92,55 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                         <td><input name="caresoft_id" maxlength="5" type="text" value="" class="small-text" placeholder="ID nguồn lead CareSoft hoặc để trống trống"></td>
                     </tr> -->
                     <tr>
+                        <th><span>Tiêu đề CareSoft</span></th>
+                        <td>
+                            <input name="title" type="text" value="" class="regular-text" placeholder="VD: SEO">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><span>Mặc Định</span></th>
+                        <td>
+                            <fieldset>
+                                <label for="">
+                                    Nguồn Phiếu
+                                    <select id="nguon_phieu" name="nguon_phieu" class="mr-3">
+                                        <option value="">   Bỏ Qua   </option>
+                                        <option value="41890">182 - Quảng cáo</option>
+                                        <option value="41893">188 - Social</option>
+                                        <option value="41896">173 - SEO</option>
+                                        <option value="41899">179 - Đối tác</option>
+                                        <option value="41902">176 - Offline</option>
+                                        <option value="41905">186 - CSKH</option>
+                                        <option value="42106">175 - Hotline</option>
+                                        <option value="42109">174 - Livechat</option>
+                                        <option value="42178">187 - TVOL</option>
+                                    </select>
+                                    Chi Tiết Nguồn Phiếu
+                                    <select id="chi_tiet_nguon_phieu" name="chi_tiet_nguon_phieu" class="">
+                                        <option value="">   Bỏ Qua   </option>
+                                        <option value="42112">Chưa phân loại</option>
+                                        <option value="42115">MB</option>
+                                        <option value="42118">MT</option>
+                                        <option value="42121">MN</option>
+                                        <option value="42124">HCM</option>
+                                        <option value="41920">SEO 1</option>
+                                        <option value="41923">SEO 2 SMS</option>
+                                        <option value="41926">Criteo</option>
+                                        <option value="41929">T04</option>
+                                        <option value="41932">T05</option>
+                                        <option value="41935">T06</option>
+                                        <option value="42490">T07</option>
+                                        <option value="44116">KOLs</option>
+                                        <option value="44119">Khác</option>
+                                    </select>
+                                </label>
+                            </fieldset>
+                        </td>
+                    </tr>
+                    <!--<tr>
                         <th><span>Nguồn phiếu</span></th>
                         <td>
-                            <select style="    width: 35%;"  id="nguon_phieu" name="nguon_phieu" class="form-control">
+                            <select style="    width: 35%;"  id="nguon_phieu" name="nguon_phieu" class="">
                             <option value="">Vui lòng chọn Nguồn phiếu ghi</option>
                                     <option value="41890">182 - Quảng cáo</option>
                                     <option value="41893">188 - Social</option>
@@ -118,7 +157,7 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                     <tr>
                         <th><span>Chi tiết nguồn phiếu</span></th>
                         <td>
-                            <select style="    width: 35%;" id="chi_tiet_nguon_phieu" name="chi_tiet_nguon_phieu" class="form-control">
+                            <select style="    width: 35%;" id="chi_tiet_nguon_phieu" name="chi_tiet_nguon_phieu" class="">
                                 <option value="">Vui lòng chọn chi tiết Nguồn phiếu ghi</option>
                                 <option value="42112">Chưa phân loại</option>
                                 <option value="42115">MB</option>
@@ -135,6 +174,23 @@ $pluginPageUrl = $protocol . "$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?page=webMana
                                 <option value="44116">KOLs</option>
                                 <option value="44119">Khác</option>
                             </select>
+                        </td>
+                    </tr>-->
+                    <tr>
+                        <th scope="row">Nâng Cao</th>
+                        <td>
+                            <!--<fieldset>
+                                <legend class="screen-reader-text"><span>CareSoft Detail</span></legend>
+                                <label for="has_detail_CareSoft">
+                                    <input type="checkbox" id="has_detail_CareSoft" value="1">
+                                    Phân Loại Chi Tiết
+                                </label>
+                            </fieldset>-->
+                            <div class="advanced_setting_caresoft_wrap">
+                            </div>
+                            <button type="button" id="addCondition" class="button button-default">
+                                Thêm điều kiện
+                            </button>
                         </td>
                     </tr>
                 </table>
