@@ -1383,6 +1383,7 @@ class webManagerLib {
             $detail = isset($ticket['detail']) && gettype($ticket['detail']) == 'array' && count($ticket['detail']) > 0 ? $ticket['detail'] : false;
             $form_id = isset($ticket['form_id']) && !is_null($ticket['form_id']) && (int)$ticket['form_id'] > 0 ? (int)$ticket['form_id'] : false;
             $formCustom = isset($ticket['formCustom']) && $ticket['formCustom'] == true ? true : false;
+            $sources = isset($ticket['sources']) && is_string($ticket['sources']) ? $ticket['sources'] : false;
             $referer = isset($ticket['referer']) && is_array($ticket['referer']) ? $ticket['referer'] : false;
             $time =  self::dateTimeNow();
 
@@ -1403,6 +1404,7 @@ class webManagerLib {
                 if ($note) $newTicket['note'] = $note;
                 if ($detail) $newTicket['detail'] = json_encode($detail);
                 if ($referer) $newTicket['referer'] = json_encode($referer);
+                if ($sources) $newTicket['sources'] = $sources;
 
                 if ($formCustom) {
                     $ticketCustomData = $ticket;
@@ -1431,9 +1433,11 @@ class webManagerLib {
                         $phone = $newTicket['phone'];
                         $referer = $newTicket['referer'] ? json_decode($newTicket['referer']) : false;
 
-                        $sources = isset($ticketDetail->search) && gettype($ticketDetail->search) == "string" && strlen($ticketDetail->search) > 0 ? substr($ticketDetail->search, 1, strlen($ticketDetail->search)) : false;
-
-                        $newTicket['sources'] = $sources ? $sources : null;
+                        $sources = gettype($newTicket['sources']) == "string" && strlen($newTicket['sources']) ? $newTicket['sources'] : false;
+                        if (!$sources) {
+                            $sources = isset($ticketDetail->search) && gettype($ticketDetail->search) == "string" && strlen($ticketDetail->search) > 0 ? substr($ticketDetail->search, 1, strlen($ticketDetail->search)) : false;
+                            $newTicket['sources'] = $sources ? $sources : null;
+                        }
 
                         // Check and Send data to CareSoft
                         $checkToCareSoftNow = $formData->to_caresoft_now == self::TO_CARESOFT_NOW_ON;
@@ -1570,9 +1574,9 @@ class webManagerLib {
         if (!$options)
             return false;
         list($title , $ticket_comment, $email, $phone, $username, $caresoft_id,  $nguon_phieu, $chi_tiet_nguon_phieu) = $options;
-        $caresoft_id = isset($caresoft_id) && !is_null($caresoft_id) && (int)$caresoft_id > 0 ? $caresoft_id : 42124;
-        $nguon_phieu = isset($nguon_phieu) && !is_null($nguon_phieu) && (int)$nguon_phieu > 0 ? $nguon_phieu : 41890;
-        $chi_tiet_nguon_phieu = isset($chi_tiet_nguon_phieu) && !is_null($chi_tiet_nguon_phieu) && (int)$chi_tiet_nguon_phieu > 0 ? $chi_tiet_nguon_phieu : 42112;
+        $caresoft_id = isset($caresoft_id) && !is_null($caresoft_id) && (int)$caresoft_id > 0 ? (int)$caresoft_id : 42124;
+        $nguon_phieu = isset($nguon_phieu) && !is_null($nguon_phieu) && (int)$nguon_phieu > 0 ? (int)$nguon_phieu : 41890;
+        $chi_tiet_nguon_phieu = isset($chi_tiet_nguon_phieu) && !is_null($chi_tiet_nguon_phieu) && (int)$chi_tiet_nguon_phieu > 0 ? (int)$chi_tiet_nguon_phieu : 42112;
         $title = isset($title) && gettype($title) == "string" && strlen($title) > 0 ? $title : false;
         $ticket_comment = isset($ticket_comment) && gettype($ticket_comment) == "string" && strlen($ticket_comment) > 0 ? $ticket_comment : false;
         $email = isset($email) && !is_null($email) && strlen($email) > 0 ? $email : "";
@@ -1584,7 +1588,7 @@ class webManagerLib {
             $urlSend = "https://api.caresoft.vn/tmvngocdung/api/v1/tickets";
             $agent = self::getAgentsAssignee();
             $custom_field = '{"id": "3406", "value": "41875"},{"id": "1448", "value": "'.$nguon_phieu.'"}';
-            if ((int)$chi_tiet_nguon_phieu == 44119) {
+            if (in_array($chi_tiet_nguon_phieu, [44119,41920, 41923, 41926, 41929, 41932, 41935, 42490, 44119])) {
                 $custom_field .= ',{"id": "1700", "value": "'.$chi_tiet_nguon_phieu.'"}';
             } else {
                 $custom_field .= ',{"id": "1416", "value": "'.$chi_tiet_nguon_phieu.'"}';

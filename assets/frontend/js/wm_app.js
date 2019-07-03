@@ -203,7 +203,7 @@
                 e.preventDefault(e);
                 var $f = $(this),
                     form = $f.get(0);
-                var $submitBtn = $f.find(".btnSubmit").length > 0 ? $f.find(".btnSubmit") : $(form.submit),
+                var $submitBtn = $f.find(".btnSubmit").length > 0 ? $f.find(".btnSubmit") : $f.find("[type=submit]"),
                     defaultTextSubmit = $submitBtn.text();
                 // var snapShot = $f.children().clone();
                 var ticket = $f.data();
@@ -215,10 +215,11 @@
                 $submitBtn.attr('disabled', true);
 
 
-                var {referer, started} = traffic.getInfoTraffic() ? traffic.getInfoTraffic() : {},
+                var {referer, ref_begin, started} = traffic.getInfoTraffic() ? traffic.getInfoTraffic() : {},
                 isToday = new Date().toDateString() === new Date(started).toDateString();
                 if (referer && started) {
                     if (isToday) {
+                        ticket.sources = ref_begin;
                         ticket.referer = referer;
                     }
                 }
