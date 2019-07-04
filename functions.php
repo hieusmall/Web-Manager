@@ -854,6 +854,7 @@ class webManagerLib {
     public static function interpolate($str, $data) {
         $str = gettype($str) == 'string' && strlen($str) > 0 ? $str : '';
         $data = gettype($data) == 'array' && !is_null($data) ? $data : array();
+        $data["idHtml"] = self::stringToSlug($data["name"]);
 
         // For each key in the data object, insert its value into the string at the corresponding placeholder
         foreach($data as $key => $replace){
