@@ -682,6 +682,7 @@ class webManagerLib {
         $options = "";
         foreach ($postIds as $obj) {
             $postData = get_post($obj->post_id);
+            if (!$postData) continue;
             $options .= "<option value='$obj->post_id'>$postData->post_title</option>";
         }
 
@@ -699,6 +700,7 @@ class webManagerLib {
         global $wpdb;
         $tableName = $wpdb->prefix . self::TICKET_TABLE_NAME;
         $query = "select sources from $tableName where sources is not null and sources like '%utm_source%'";
+
         $sourcesType = $wpdb->get_results($query, OBJECT);
 
         $utmSourcesData = array_map(function ($obj) {
@@ -707,6 +709,9 @@ class webManagerLib {
             return $sources["utm_source"];
         }, $sourcesType);
         $options = "";
+
+        $utmSourcesData = array_unique($utmSourcesData);
+
         foreach ($utmSourcesData as $val) {
             $options .= "<option value='$val'>$val</option>";
         }
