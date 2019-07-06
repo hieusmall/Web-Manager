@@ -500,6 +500,20 @@
             }
             return c;
         }
+        ticketLib.ticketTableToolbar = () => {
+            var $exportBtn = $(".exportTheTickets"),
+            $filterTicketsBtn = $(".filterTickets"),
+            $filterTicketsDialog = $("#filterTicketsModal");
+            $exportBtn.on("click", function (e) {
+                e.preventDefault(e);
+
+            });
+
+            $filterTicketsBtn.on("click", function (e) {
+                e.preventDefault(e);
+                $filterTicketsDialog.modal("show");
+            });
+        }
 
         // Ticket data table
         var $ticketTable = $('#ticketDTable'),
@@ -745,6 +759,7 @@
             ticketChart = "#ticketChart";
 
         ticketLib.chartTickets().start();
+        ticketLib.ticketTableToolbar();
     }
 
 

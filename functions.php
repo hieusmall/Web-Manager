@@ -249,6 +249,12 @@ class webManagerLib {
         wp_enqueue_style('WMBE_apexcharts_style', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'apexcharts/apexcharts.css', true, self::VERSION );
         wp_enqueue_script('WMBE_apexcharts_scripts', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'apexcharts/apexcharts.min.js', array('jquery'), self::VERSION, true);
 
+        wp_enqueue_style('WMBE_fontawesome_style', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . '@fontawesome/css/all.min.css', true, self::VERSION );
+        wp_enqueue_style('WMBE_sweetalert_style', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'sweetalert/sweetalert2.min.css', true, self::VERSION );
+        wp_enqueue_script('WMBE_sweetalert_scripts', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'sweetalert/sweetalert2.min.js', array('jquery'), self::VERSION, true);
+
+
+
         $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
         $isFormPage = isset($query["currentPage"]) && in_array($query["currentPage"], ['formUpdate', 'formNew']) ? true : false;
         $isListPage = !isset($query["currentPage"]) || in_array($query["currentPage"], ['listForm','listPopup','listTicket']) ? true : false;
