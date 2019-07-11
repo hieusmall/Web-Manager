@@ -34,10 +34,17 @@ class webManagerLib {
 
     const VERSION = WM_VERSION;
 
-    const PAGES = ["webManagerGeneral","webManagerForm","webManagerPopup","webManagerTicket"];
+    /*const PAGES = ["webManagerGeneral","webManagerForm","webManagerPopup","webManagerTicket"];
     const ROUTES = ['newTicket','listTicket', 'ticketsDTableFilterSource', 'ticketsDataTable', 'ticketToCareSoftNow', 'ticketCharts', 'readTicket', 'deleteTicket', 'updateTicket',
         'listForm' , 'newForm','readForm', 'updateForm', 'deleteForm',
+        'listPopup' , 'newPopup','readPopup', 'updatePopup', 'deletePopup'];*/
+    const PAGES = ["webManagerGeneral","webManagerForm","webManagerPopup","webManagerTicket"];
+    const ROUTES = ['newTicket','listTicket', 'ticketsDTableFilterSource', 'ticketsDataTable',
+        'ticketToCareSoftNow', 'ticketCharts', 'readTicket', 'deleteTicket', 'updateTicket',
+        'listForm' , 'newForm','readForm', 'updateForm', 'deleteForm',
         'listPopup' , 'newPopup','readPopup', 'updatePopup', 'deletePopup'];
+
+    const ROUTES_GENERAL = ["allTicketChartDonut"];
 
     const TO_CARESOFT_NOW_ON = 'on';
     const TO_CARESOFT_NOW_OFF = 'off';
@@ -288,6 +295,7 @@ class webManagerLib {
         wp_enqueue_script(self::ID . 'bootstrap_app', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'bootstrap/js/bootstrap.min.js', array('jquery'), self::VERSION, true);
         wp_enqueue_script(self::ID . 'main_app', plugin_dir_url(__FILE__) . self::FRONTEND_ASSET . 'js/wm_app.js', array('jquery'), self::VERSION, true);
         wp_localize_script(self::ID . 'main_app', 'wmGlobal', array(
+            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
             'pluginsUrl' => plugins_url() . "/" . self::PLUGIN_NAME,
             'vendorAssets' => plugins_url() . "/" . self::PLUGIN_NAME . "/" . self::VENDOR_ASSET
         ));
@@ -1418,6 +1426,8 @@ class webManagerLib {
                 if ($referer) $newTicket['referer'] = json_encode($referer);
                 if ($sources) $newTicket['sources'] = $sources;
 
+                $newTicket["ip_address"] = self::get_client_ip();
+
                 if ($formCustom) {
                     $ticketCustomData = $ticket;
                     unset($ticketCustomData["formCustom"]);
@@ -1453,6 +1463,7 @@ class webManagerLib {
 
                         // Check and Send data to CareSoft
                         $checkToCareSoftNow = $formData->to_caresoft_now == self::TO_CARESOFT_NOW_ON;
+                        $result = false;
 
                         if ($checkToCareSoftNow) {
                             $title = "";
@@ -1519,24 +1530,26 @@ class webManagerLib {
                             // If can't send to caresoft
                             if (!$ticketCareSoft) {
                                 // if send fail ticketCaresoft
-
+                                wp_send_json_error("Cannot create new ticket",405);
                             } else {
                                 $newTicket['caresoft_ticket'] = json_encode($ticketCareSoft);
+                                $result =  $wpdb->insert( $ticketTable, $newTicket);
                             }
+                        } else {
+                            $result =  $wpdb->insert( $ticketTable, $newTicket);
                         }
 
-                        $result =  $wpdb->insert( $ticketTable, $newTicket);
                         if ($result) {
                             wp_send_json_success(true);
                         } else {
-                            wp_send_json_error("Cannot create new ticket",405);
+                            wp_send_json_error("Cannot create new ticket",403);
                         }
                     } else {
-                        wp_send_json_error("Cannot find this form" , 403);
+                        wp_send_json_error("Cannot find this form" , 402);
                     }
                 });
             } else {
-                wp_send_json_error('Missing require field', 402);
+                wp_send_json_error('Missing require field', 401);
             }
         }
         die();
@@ -2007,6 +2020,27 @@ class webManagerLib {
         $attach_data = wp_generate_attachment_metadata( $attach_id, $file );
         $res1= wp_update_attachment_metadata( $attach_id, $attach_data );
         $res2= set_post_thumbnail( $post_id, $attach_id );
+    }
+
+
+    // Function to get the client IP address
+    public static function get_client_ip() {
+        $ipaddress = '';
+        if (getenv('HTTP_CLIENT_IP'))
+            $ipaddress = getenv('HTTP_CLIENT_IP');
+        else if(getenv('HTTP_X_FORWARDED_FOR'))
+            $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
+        else if(getenv('HTTP_X_FORWARDED'))
+            $ipaddress = getenv('HTTP_X_FORWARDED');
+        else if(getenv('HTTP_FORWARDED_FOR'))
+            $ipaddress = getenv('HTTP_FORWARDED_FOR');
+        else if(getenv('HTTP_FORWARDED'))
+            $ipaddress = getenv('HTTP_FORWARDED');
+        else if(getenv('REMOTE_ADDR'))
+            $ipaddress = getenv('REMOTE_ADDR');
+        else
+            $ipaddress = 'UNKNOWN';
+        return $ipaddress;
     }
 
 }

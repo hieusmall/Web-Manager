@@ -280,6 +280,11 @@
                     detail.postTitle = typeof postTitleMeta == "object"  ? postTitleMeta.content : undefined;
                     ticket.detail = detail;
 
+                    console.log(ticket);
+                    $submitBtn.html(defaultTextSubmit);
+                    $submitBtn.attr("disabled", false);
+                    return false;
+
                     client.jsonTransPortData(options, function (err, res) {
                         var {success, data} = typeof res == "object" ? res : {};
                         if (!err && success && data) {
@@ -325,6 +330,7 @@
                 url = `${origin}${pathname}wp-admin/admin-ajax.php`;
             }
         }
+        url = typeof wmGlobal == "object" && wmGlobal instanceof Object && wmGlobal.hasOwnProperty("ajaxUrl") ? wmGlobal.ajaxUrl : url;
 
         $.ajax({
             type : type, //Phương thức truyền post hoặc get
