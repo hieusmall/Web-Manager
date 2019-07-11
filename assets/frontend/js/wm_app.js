@@ -280,10 +280,10 @@
                     detail.postTitle = typeof postTitleMeta == "object"  ? postTitleMeta.content : undefined;
                     ticket.detail = detail;
 
-                    console.log(ticket);
+                   /* console.log(ticket);
                     $submitBtn.html(defaultTextSubmit);
                     $submitBtn.attr("disabled", false);
-                    return false;
+                    return false;*/
 
                     client.jsonTransPortData(options, function (err, res) {
                         var {success, data} = typeof res == "object" ? res : {};
