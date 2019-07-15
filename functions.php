@@ -338,11 +338,11 @@ class webManagerLib {
             ],
             "js" => [
                 "codeEditor" => wp_enqueue_code_editor(array('type' => 'text/javascript',
-                "file" => plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/afbeContentExtras.js'))
+                    "file" => plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/afbeContentExtras.js'))
             ],
             "html" => [
                 "codeEditor" => wp_enqueue_code_editor(array('type' => 'text/html',
-                "file" => plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'afbeContentExtras.html'))
+                    "file" => plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'afbeContentExtras.html'))
             ],
 
         ];
@@ -1590,7 +1590,7 @@ class webManagerLib {
                             } elseif ($caresoftSetting && $sources && $hasKey) {
                                 $utm_source = strtolower(self::queryToArray($sources)["utm_source"]);
                             }
-                            if ($utm_source) {
+                            if ($utm_source && $caresoftSetting) {
                                 $x = array_filter($caresoftSetting, function($obj) use (&$utm_source) {
                                     $flag = strtolower($obj->utm_source) == $utm_source;
                                     return $flag;
