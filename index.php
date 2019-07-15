@@ -27,5 +27,4 @@ include( WM_PLUGIN_PATH . 'functions.php' );
 include( WM_PLUGIN_PATH . 'admin-panel.php' );
 include( WM_PLUGIN_PATH . 'pageTemplate.php' );
 include( WM_PLUGIN_PATH . 'shortcode.php' );
-
 ?>

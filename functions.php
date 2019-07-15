@@ -9,7 +9,6 @@
 $method = $_SERVER['REQUEST_METHOD'];
 $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
 
-
 add_action('init', array( 'webManagerLib', 'init' )); // Main Hook
 if ( class_exists('webManagerLib', false) ) return;
 
@@ -22,6 +21,7 @@ class webManagerLib {
     const TICKET_TABLE_NAME = 'wm_ticket';
     const YOUTUBE_TABLE_NAME = 'wm_youtube_v3';
     const CS_ANGENT_TABLE_NAME = 'wm_cs_agent';
+    const AB_CONTENT_TABLE_NAME = 'wm_ab_content';
 
     const BACKEND_TEMPLATE = 'templates/backend/';
     const FRONTEND_TEMPLATE = 'templates/frontend/';
@@ -38,7 +38,7 @@ class webManagerLib {
     const ROUTES = ['newTicket','listTicket', 'ticketsDTableFilterSource', 'ticketsDataTable', 'ticketToCareSoftNow', 'ticketCharts', 'readTicket', 'deleteTicket', 'updateTicket',
         'listForm' , 'newForm','readForm', 'updateForm', 'deleteForm',
         'listPopup' , 'newPopup','readPopup', 'updatePopup', 'deletePopup'];*/
-    const PAGES = ["webManagerGeneral","webManagerForm","webManagerPopup","webManagerTicket"];
+    const PAGES = ["webManagerGeneral","webManagerForm","webManagerPopup","webManagerTicket","webManagerAfBeContent"];
     const ROUTES = ['newTicket','listTicket', 'ticketsDTableFilterSource', 'ticketsDataTable',
         'ticketToCareSoftNow', 'ticketCharts', 'readTicket', 'deleteTicket', 'updateTicket',
         'listForm' , 'newForm','readForm', 'updateForm', 'deleteForm',
@@ -60,7 +60,7 @@ class webManagerLib {
     }
 
 
-    public static function setUpStorage() {
+    /*public static function setUpStorage() {
         global $wpdb;
         $prefix = $wpdb->prefix;
         $wm_ticket_table = 'SET NAMES utf8mb4;
@@ -201,7 +201,7 @@ class webManagerLib {
             $done = dbDelta( $sql );
         }
 
-    }
+    }*/
 
 
     public static function init() {
@@ -227,7 +227,6 @@ class webManagerLib {
 
         $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
         $isPage = isset($query["page"]) && in_array($query['page'] ,self::PAGES) ? true : false;
-
         if ($isPage) {
             // Check login
             if (!is_admin() && !is_user_logged_in()) {
@@ -236,6 +235,48 @@ class webManagerLib {
             // add stylesheets for the plugin's backend
             add_action('admin_enqueue_scripts', array( __CLASS__, 'load_admin_custom_be_styles' ));
         }
+
+
+        // After Before content
+        add_filter( 'the_content', array( __CLASS__, 'theme_slug_filter_the_content' ));
+    }
+
+
+    function theme_slug_filter_the_content( $content ) {
+        $custom_content = "";
+        try {
+            $item = self::getABContentItem();
+            if ($item) {
+                $itemContent = $item->content && strlen($item->content) ? $item->content : false;
+                $location = is_array($item->location) && count($item->location) ? $item->location : false ;
+                if ($location && $itemContent) {
+                    foreach ($location as $key => $a) {
+                        if (count($location) == 1) {
+                            switch ($a) {
+                                case "top" :
+                                    $custom_content .= $itemContent . $content;
+                                    break;
+                                case "bottom" :
+                                    $custom_content .= $content . $itemContent;
+                                    break;
+                            }
+                        }
+                        if (count($location) == 2) {
+                            if ($key == 0) {
+                                $custom_content .= $itemContent;
+                            } else {
+                                $custom_content .= $content . $itemContent;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception $exception) {
+            return "";
+        }
+
+//        $custom_content .= $content;
+        return $custom_content;
     }
 
     public static function load_admin_custom_be_styles() {
@@ -261,7 +302,6 @@ class webManagerLib {
         wp_enqueue_script('WMBE_sweetalert_scripts', plugin_dir_url(__FILE__) . self::VENDOR_ASSET . 'sweetalert/sweetalert2.min.js', array('jquery'), self::VERSION, true);
 
 
-
         $query = webManagerLib::queryToArray($_SERVER['QUERY_STRING']);
         $isFormPage = isset($query["currentPage"]) && in_array($query["currentPage"], ['formUpdate', 'formNew']) ? true : false;
         $isListPage = !isset($query["currentPage"]) || in_array($query["currentPage"], ['listForm','listPopup','listTicket']) ? true : false;
@@ -285,6 +325,25 @@ class webManagerLib {
 
         wp_enqueue_style('webManageBEStyles', plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'css/wm_backend.css', false, self::VERSION );
         wp_enqueue_script('webManageBEScripts', plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/wm_backend.js', array('jquery'), self::VERSION, true);
+
+        // Add Code Mirror
+        $_wm = [
+            "css" => [
+                "codeEditor" => wp_enqueue_code_editor(array('type' => 'text/css'))
+            ],
+            "js" => [
+                "codeEditor" => wp_enqueue_code_editor(array('type' => 'text/javascript',
+                "file" => plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'js/afbeContentExtras.js'))
+            ],
+            "html" => [
+                "codeEditor" => wp_enqueue_code_editor(array('type' => 'text/html',
+                "file" => plugin_dir_url(__FILE__) . self::BACKEND_ASSET . 'afbeContentExtras.html'))
+            ],
+
+        ];
+        wp_localize_script('webManageBEScripts', '_wm', $_wm);
+        wp_enqueue_script('wp-theme-plugin-editor');
+        wp_enqueue_style('wp-codemirror');
     }
 
     public static function enqueue_frontend_scripts() {
@@ -318,6 +377,9 @@ class webManagerLib {
         add_submenu_page( 'webManagerGeneral', 'Ticket',
             'Ticket', 'manage_options',
             'webManagerTicket', array(__CLASS__, 'webManagerTicket') );
+        add_submenu_page( 'webManagerGeneral', 'After Before Content',
+            'After Before Content', 'manage_options',
+            'webManagerAfBeContent', array(__CLASS__, 'webManagerAfBeContent') );
     }
 
 
@@ -329,6 +391,11 @@ class webManagerLib {
     public static function webManagerTicket() {
         include (self::PLUGIN_PATH . self::BACKEND_TEMPLATE . 'ticket.php');
     }
+
+    public static function webManagerAfBeContent() {
+        include (self::PLUGIN_PATH . self::BACKEND_TEMPLATE . 'afbeContent.php');
+    }
+
 
     public static function wmListTickets($callback) {
         global $wpdb;
@@ -1100,8 +1167,45 @@ class webManagerLib {
 
 
 
+    public static function getABContentItem() {
+        global $wpdb;
+        $tableName = $wpdb->prefix . self::AB_CONTENT_TABLE_NAME;
+        $oldContent = $wpdb->get_results("select * from $tableName", OBJECT);
+        if ($oldContent && is_array($oldContent) && count($oldContent)) {
+            $oldContent = $oldContent[0];
 
+            $oldContent->location = is_null($oldContent->location) ? null : json_decode($oldContent->location);
 
+            return $oldContent;
+        } else {
+            return false;
+        }
+    }
+
+    public static function abContentHandler($data) {
+
+        $htmlContent = [];
+        $htmlContent["content"] = isset($data["content"]) && is_string($data["content"]) && strlen($data["content"]) ? $data["content"] : null;
+        $htmlContent["location"] = isset($data["location"]) && is_array($data["location"]) && count($data["location"]) ? json_encode($data["location"]) : null;
+        $timeNow = self::dateTimeNow();
+
+        $oldContent = self::getABContentItem();
+        global $wpdb;
+        $tableName = $wpdb->prefix . self::AB_CONTENT_TABLE_NAME;
+        if ($oldContent) {
+            ini_set('display_errors', 1);
+            ini_set('display_startup_errors', 1);
+            error_reporting(E_ALL);
+            $updateContent = $wpdb->update($tableName, $htmlContent, ["id"=>$oldContent->id]);
+            return $updateContent;
+        } else {
+            $htmlContent["created_at"] = $timeNow;
+            $htmlContent["updated_at"] = $timeNow;
+            $newContent = $wpdb->insert($tableName,$htmlContent);
+            return $newContent;
+        }
+
+    }
 
     public static function webManagerForm() {
         include (self::PLUGIN_PATH . self::BACKEND_TEMPLATE . 'form.php');
