@@ -274,6 +274,8 @@ class webManagerLib {
                 } else {
                     return $content;
                 }
+            } else {
+                return $content;
             }
         } catch (Exception $exception) {
             return $content;
