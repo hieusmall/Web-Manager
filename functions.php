@@ -269,14 +269,17 @@ class webManagerLib {
                             }
                         }
                     }
+                    return $custom_content;
+
+                } else {
+                    return $content;
                 }
             }
         } catch (Exception $exception) {
-            return "";
+            return $content;
         }
-
 //        $custom_content .= $content;
-        return $custom_content;
+//        return $custom_content;
     }
 
     public static function load_admin_custom_be_styles() {
