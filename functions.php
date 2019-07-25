@@ -943,6 +943,7 @@ class webManagerLib {
     }
 
     public static function getFETemplateCustom($arr,$template) {
+
         $str = "";
         if ($template == "popup") {
             $str .= '<div id="'.$arr['modalIdHtml'].'" style="display: none" class="wm-popup wm-campaign-popup modal fade" role="dialog" 
@@ -958,7 +959,6 @@ class webManagerLib {
                         <div class="popup-extra-content">
                             '.$arr['content'].'
                         </div>
-                        '.$arr['wmForm'].'
                     </div>
                 </div>
             </div>
@@ -1913,6 +1913,18 @@ class webManagerLib {
                         if ($form_id)
                             $wmForm = htmlspecialchars(self::getWMFormShortCode(array("form_id"=>$form_id)));
                         $popupData->wmForm = $wmForm;
+//                        echo "<pre>";
+                        /*if (preg_match_all('/\[wmForm(.*?)\]/', $popupData->content, $shortcodeForm ) ) {
+//                            $formShortcode = array_key_exists( 0 , $formShortcode) ? $formShortcode[0] : array();
+                            $formShortcode = array_key_exists( 0 , $shortcodeForm) ? $shortcodeForm[0] : array();
+                            $formId = array_key_exists( 1 , $shortcodeForm) && $shortcodeForm[1] ? $shortcodeForm[1] : false;
+                            // $questions will contain the array of the question shortcodes
+                            //Do your stuff
+                            $formId = $formId ? str_replace("form_id=", "", $formId[0]) : false;
+
+                            print_r($wmForm);
+                        }*/
+//                        echo "</pre>";
                         $popupData->modalIdHtml = $modalIdHtml;
 
                         $bg_image = self::getImageById($popupData->bg_image_id);
@@ -1921,6 +1933,7 @@ class webManagerLib {
                         $popupData->bg_image_height = $bg_image->height ? $bg_image->height . 'px' : "";
 
                         if ($popup_custom) {
+                            $popupData->content = str_replace("<p>{wmForm}</p>", htmlspecialchars_decode($wmForm), $popupData->content);
                             $popupStr = self::getFETemplateCustom((array)$popupData, 'popup');
                         } else {
                             $popupStr = self::getFETemplate((array)$popupData, 'popup');
@@ -1934,6 +1947,11 @@ class webManagerLib {
         return $popupHtml;
     }
 
+
+    public static function wpse250308_get_questions() {
+        global $post;
+
+    }
 
     public static function arrayToInput($arr) {
         $types = [''];
