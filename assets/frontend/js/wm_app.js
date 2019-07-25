@@ -1,8 +1,8 @@
 (function($){
     // Define the client;
     var client = {},
-    pageVideo = {},
-    web = {};
+        pageVideo = {},
+        web = {};
 
     client.lead = false;
 
@@ -31,7 +31,6 @@
                     console.log("Không tìm thấy chiến dịch!");
                     return;
                 }
-                $popup.find("form .address-name").hide();
                 if (addressName) {
                     $popup.find("form .address-name").val(addressName);
                 }
@@ -144,7 +143,7 @@
                                 });
                                 $field = $select.append($(options));
                                 $formGroup.append($label)
-                                                    .append($field);
+                                    .append($field);
                             } else if(['textarea'].includes(type)) {
                                 $field = $(`<textarea></textarea>`).attr(attrs);
                                 $formGroup.append($label).append($field);
@@ -220,7 +219,7 @@
 
 
                 var {referer, ref_begin, started} = traffic.getInfoTraffic() ? traffic.getInfoTraffic() : {},
-                isToday = new Date().toDateString() === new Date(started).toDateString();
+                    isToday = new Date().toDateString() === new Date(started).toDateString();
                 if (referer && started) {
                     if (isToday) {
                         ticket.sources = ref_begin;
@@ -284,10 +283,10 @@
                     detail.postTitle = typeof postTitleMeta == "object"  ? postTitleMeta.content : undefined;
                     ticket.detail = detail;
 
-                   /* console.log(ticket);
-                    $submitBtn.html(defaultTextSubmit);
-                    $submitBtn.attr("disabled", false);
-                    return false;*/
+                    /* console.log(ticket);
+                     $submitBtn.html(defaultTextSubmit);
+                     $submitBtn.attr("disabled", false);
+                     return false;*/
 
                     client.jsonTransPortData(options, function (err, res) {
                         var {success, data} = typeof res == "object" ? res : {};
@@ -458,18 +457,18 @@
 
     traffic.setInfoTraffic = (data) => {
         var {ref_begin, started} = typeof data == "object" ? data : {},
-        pagesViewed = [],
-        ver = "v1";
+            pagesViewed = [],
+            ver = "v1";
         ref_begin = ref_begin ? ref_begin : window.location.search.substr(1, window.location.search.length);
         started = started ? started : Date.now();
         var trafficObj = {
-            referer: client.queryStringToObj(window.location.search),
-            ref_begin: ref_begin,
-            started : started,
-            pagesViewed : pagesViewed,
-            ver : ver
-        },
-        trafficStr = JSON.stringify(trafficObj);
+                referer: client.queryStringToObj(window.location.search),
+                ref_begin: ref_begin,
+                started : started,
+                pagesViewed : pagesViewed,
+                ver : ver
+            },
+            trafficStr = JSON.stringify(trafficObj);
         localStorage.setItem("wm_traffic_info", trafficStr);
         return true;
     }
@@ -477,11 +476,11 @@
     traffic.updateInfoTraffic = (data) => {
         data = typeof data == "object" ? data : {};
         var trafficDetail = traffic.getInfoTraffic(),
-        {pageViewed} = data;
+            {pageViewed} = data;
 
         pageViewed = typeof pageViewed == "object" && pageViewed instanceof Object ? pageViewed : false;
         var count = trafficDetail.pagesViewed.length,
-        key = count + 1;
+            key = count + 1;
         if (pageViewed) {
             var {time, url} = pageViewed;
             time = typeof time == "number" && time > 0 ? time : false;

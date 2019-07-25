@@ -942,6 +942,32 @@ class webManagerLib {
         return $str;
     }
 
+    public static function getFETemplateCustom($arr,$template) {
+        $str = "";
+        if ($template == "popup") {
+            $str .= '<div id="'.$arr['modalIdHtml'].'" style="display: none" class="wm-popup wm-campaign-popup modal fade" role="dialog" 
+            data-delay-show-time="'.$arr['delay_show_time'].'" data-popup-id="'.$arr['popup_id'].'" 
+            data-directional="'.$arr['direction_background'].'">
+                <div class="modal-dialog">
+                <!-- Modal content-->
+                <div class="wm-popup-content modal-content bg-brand-golden" style="background-color: white; background-image: url('.$arr['bg_image'].')">
+                    <div class="close-popup wm-whiteframe-3dp">
+                        <a href="#" class="close" data-dismiss="modal">&times;</a>
+                    </div>
+                    <div class="wm-popup-body modal-body clearfix">
+                        <div class="popup-extra-content">
+                            '.$arr['content'].'
+                        </div>
+                        '.$arr['wmForm'].'
+                    </div>
+                </div>
+            </div>
+            </div>';
+        }
+
+        return $str;
+    }
+
     public static function interpolate($str, $data) {
         $str = gettype($str) == 'string' && strlen($str) > 0 ? $str : '';
         $data = gettype($data) == 'array' && !is_null($data) ? $data : array();
@@ -1865,13 +1891,14 @@ class webManagerLib {
     public static function getWMPopupShortCode($att, $content = null) {
         $popup_id = isset($att['popup_id']) && !is_null($att['popup_id']) && (int)$att['popup_id'] > 0 ? $att['popup_id'] : false;
         $button = isset($att['type']) && $att['type'] == 'button' ? $att['type'] : false;
+        $popup_custom = isset($att["popup_custom"]) && $att["popup_custom"] == true ? true : false;
 
         $popupHtml = "";
         if (!$popup_id) {
             $popupHtml = "Pop Oops";
         } else {
             $popupStr = '';
-            self::wmReadPopup($popup_id, function ($err, $popupData) use (&$popupStr, &$popupHtml, &$button, &$att) {
+            self::wmReadPopup($popup_id, function ($err, $popupData) use (&$popupStr, &$popupHtml, &$button, &$att, &$popup_custom) {
                 if (!$err && $popupData) {
                     $modalIdHtml = self::stringToSlug($popupData->title);
                     $buttonText = isset($att['button_text']) && gettype($att['button_text']) == "string" ? $att['button_text'] : "Click Vào Đây";
@@ -1893,7 +1920,11 @@ class webManagerLib {
                         $popupData->bg_image_width = $bg_image->width ? $bg_image->width . 'px' : "";
                         $popupData->bg_image_height = $bg_image->height ? $bg_image->height . 'px' : "";
 
-                        $popupStr = self::getFETemplate((array)$popupData, 'popup');
+                        if ($popup_custom) {
+                            $popupStr = self::getFETemplateCustom((array)$popupData, 'popup');
+                        } else {
+                            $popupStr = self::getFETemplate((array)$popupData, 'popup');
+                        }
                     }
                 }
             });
