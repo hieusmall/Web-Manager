@@ -32,6 +32,7 @@
                     return;
                 }
                 if (addressName) {
+                    $popup.find("form .address-name").hide();
                     $popup.find("form .address-name").val(addressName);
                 }
                 $popup.modal('show');
