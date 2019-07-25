@@ -4115,7 +4115,7 @@ input[type="button"].btn-block {
 .wm-form input[type="text"].form-control,
 .wm-form input[type="tel"].form-control {
     margin-bottom: 0;
-    display: block !important;
+    display: block;
     width: 100% !important;
     height: calc(1.5em + .75rem + 2px);
     padding: .375rem .75rem !important;
